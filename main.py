@@ -1,8 +1,8 @@
 import os
 import cv2
+import json
 import pytesseract
-from tkinter import IntVar, DoubleVar, StringVar, Toplevel, Tk, messagebox, PhotoImage, Text, Scale
-from tkinter import ttk
+from tkinter import ttk, IntVar, DoubleVar, StringVar, Toplevel, Tk, messagebox, PhotoImage, Text, Scale
 from pyautogui import position, screenshot
 from pyperclip import copy
 from time import sleep
@@ -41,14 +41,8 @@ class OCR_window(Tk):
     def __init__(self):
         super().__init__()
 
-        # 默认设置
-        self.alpha = 1.0
-        self.language = 'jpn'
-        self.times = 'constant'
-        self.interval = 1
-        self.copy = 1
-        self.threshold_way = cv2.THRESH_TOZERO
-        self.threshold = 127
+        # 读取设置
+        self.load_config()
 
         # 起始坐标
         self.x1 = 0
@@ -115,6 +109,42 @@ class OCR_window(Tk):
         )
         self.text_text.pack()
         self.scrollbar_text.config(command=self.text_text.yview)
+    
+    # 存储设置
+    def save_config(self):
+        configs = {
+            'alpha': self.alpha,
+            'language': self.language,
+            'times': self.times,
+            'interval': self.interval,
+            'copy': self.copy,
+            'threshold_way': self.threshold_way,
+            'threshold': self.threshold,
+        }
+        with open('config.json', 'w') as f:
+            json.dump(configs, f, indent = 4)
+
+    # 读取设置
+    def load_config(self):
+        if os.path.exists('config.json'):
+            with open('config.json', 'r') as f:
+                configs = json.load(f)
+            self.alpha = configs['alpha']
+            self.language = configs['language']
+            self.times = configs['times']
+            self.interval = configs['interval']
+            self.copy = configs['copy']
+            self.threshold_way = configs['threshold_way']
+            self.threshold = configs['threshold']
+        else:
+            self.alpha = 1.0
+            self.language = 'jpn'
+            self.times = 'constant'
+            self.interval = 1
+            self.copy = 1
+            self.threshold_way = cv2.THRESH_TOZERO
+            self.threshold = 127
+            
 
     # 划定矩形区域
     def draw_rectangle(self, event, x, y, flags, param):
@@ -247,6 +277,7 @@ class OCR_window(Tk):
                 self.threshold_way = threshold_ways[combobox_threshold_way.get()]
 
                 window_config.destroy()
+                self.save_config()
             else:
                 window_config.attributes('-topmost', True)
                 window_config.attributes('-topmost', False)
