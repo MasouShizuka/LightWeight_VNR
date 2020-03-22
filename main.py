@@ -343,6 +343,8 @@ class OCR_window(object):
                     self.threshold = values['threshold']
 
                     self.save_config()
+                    break
+        config_window.close()
 
     # 帮助按钮函数
     def help(self):
