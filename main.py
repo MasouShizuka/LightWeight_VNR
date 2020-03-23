@@ -95,7 +95,7 @@ class OCR_window(object):
                 self.get_area()
             elif event == '开始':
                 self.start_extracting()
-            elif event == '停止':
+            elif event == '结束':
                 self.stop_extracting()
             elif event == '设置':
                 self.config()
