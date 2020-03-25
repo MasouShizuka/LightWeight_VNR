@@ -1,37 +1,17 @@
 import PySimpleGUI as sg
 import os
 import json
-import pytesseract
 from PIL import Image
 from pyautogui import position, screenshot, size
 from pyperclip import copy
 from time import sleep
 from OCR_thread import OCR_thread
-from threshold_ways import threshold_ways
-
-# 若系统未安装Tesseract-OCR,则需要指定位置
-path = os.path.abspath('.')
-path_cmd = path + '/Tesseract-OCR/tesseract.exe'
-path_tessdata = path + '/Tesseract-OCR/tessdata'
-
-pytesseract.pytesseract.tesseract_cmd = path_cmd
-tessdata_dir_config = '--tessdata-dir "' + path_tessdata + '"'
-
-# 语言种类
-languages = {
-    '日文': 'jpn',
-    '简体中文': 'chi_sim',
-    '繁体中文': 'chi_tra',
-    '英文': 'eng'
-}
-lang_translate = [i for i in languages]
-
-# 图片处理方式
-threshold_name = [i for i in threshold_ways]
+from tesseract_ocr import languages, lang_translate, OCR
+from threshold_ways import threshold_ways, threshold_name
+from jbeijing import jbeijing, DLL
 
 sg.theme('DarkGrey5')
 sg.set_options(font=('微软雅黑', 15))
-
 
 class OCR_window(object):
     def __init__(self):
@@ -45,12 +25,17 @@ class OCR_window(object):
         self.copy = True
         self.threshold_way = 'BINARY'
         self.threshold = 127
+        self.jbeijing = False
+        self.jbeijing_path = None
 
         # 读取设置
         self.load_config()
 
         self.screenshot = None
         self.OCR_thread = None
+        self.working = False
+        self.text = None
+        self.text_translated = None
 
         # 起始坐标
         self.x1 = 0
@@ -60,8 +45,18 @@ class OCR_window(object):
         self.y2 = 0
 
         main_OCR = [
-            [sg.Frame('Image', [[sg.Image('', key='image')]])],
-            [sg.Frame('提取文本', [[sg.Multiline('提取文本', key='text_extract', size=(70, 15))]])],
+            [
+                sg.Frame(
+                    'Image',
+                    [[sg.Image('', key='image')]],
+                )
+            ],
+            [
+                sg.Frame(
+                    '提取文本',
+                    [[sg.Multiline('提取文本', key='text_extract', size=(70, 15))]],
+                )
+            ],
         ]
 
         main_buttons = [
@@ -70,12 +65,13 @@ class OCR_window(object):
             [sg.Button('结束', pad=(0, 20))],
             [sg.Button('设置', pad=(0, 20))],
             [sg.Button('帮助', pad=(0, 20))],
+            [sg.Button('依附', pad=(0, 20))],
         ]
 
         main_layout = [
             [
-                sg.Column(main_OCR, element_justification='c'),
-                sg.Column(main_buttons)
+                sg.Column(main_OCR, element_justification='center'),
+                sg.Column(main_buttons),
             ],
         ]
 
@@ -101,6 +97,8 @@ class OCR_window(object):
                 self.config()
             elif event == '帮助':
                 self.help()
+            elif event == '依附':
+                self.attach()
 
         self.main_window.close()
 
@@ -114,6 +112,8 @@ class OCR_window(object):
             'copy': self.copy,
             'threshold_way': self.threshold_way,
             'threshold': self.threshold,
+            'jbeijing': self.jbeijing,
+            'jbeijing_path': self.jbeijing_path,
         }
         with open('config.json', 'w') as f:
             json.dump(configs, f, indent=4)
@@ -130,16 +130,18 @@ class OCR_window(object):
             self.copy = configs['copy']
             self.threshold_way = configs['threshold_way']
             self.threshold = configs['threshold']
+            self.jbeijing = configs['jbeijing']
+            self.jbeijing_path = configs['jbeijing_path']
 
     # 截取按钮函数
     def get_area(self):
         self.main_window.Hide()
+
         im = screenshot()
         im.save('Screenshot.png')
 
         full_size = size()
-        pic_layout = [
-            # [sg.Image('test.png')],
+        screenshot_layout = [
             [sg.Graph(
                 key='graph',
                 canvas_size=full_size,
@@ -149,9 +151,9 @@ class OCR_window(object):
                 enable_events=True,
             )],
         ]
-        pic_window = sg.Window(
+        screenshot_window = sg.Window(
             'Canvas test',
-            pic_layout,
+            screenshot_layout,
             finalize=True,
             margins=(0, 0),
             element_padding=(0, 0),
@@ -159,13 +161,15 @@ class OCR_window(object):
             no_titlebar=True,
             keep_on_top=True,
         )
-        pic_window.Maximize()
-        graph = pic_window['graph']
+        screenshot_window.Maximize()
+
+        graph = screenshot_window['graph']
         graph.DrawImage('Screenshot.png', location=(0, full_size[1]))
+
         draging = False
         area = None
         while True:
-            event, values = pic_window.read(timeout=10)
+            event, values = screenshot_window.read(timeout=10)
             if event is None:
                 break
             if event == 'graph':
@@ -176,27 +180,34 @@ class OCR_window(object):
                 self.x2, self.y2 = position()
                 draging = False
                 graph.DeleteFigure(area)
-                area = graph.DrawRectangle((self.x1, full_size[1] - self.y1), (self.x2, full_size[1] - self.y2))
+                area = graph.DrawRectangle(
+                    (self.x1, full_size[1] - self.y1),
+                    (self.x2, full_size[1] - self.y2),
+                )
             elif not event.strip():
-                pic_window.close()
+                screenshot_window.close()
                 if self.x1 > self.x2:
                     self.x1, self.x2 = self.x2, self.x1
                 if self.y1 > self.y2:
                     self.y1, self.y2 = self.y2, self.y1
                 self.start_extracting()
             elif event == 'Escape:27':
-                pic_window.close()
+                screenshot_window.close()
 
             if draging:
                 x, y = position()
                 graph.DeleteFigure(area)
-                area = graph.DrawRectangle((self.x1, full_size[1] - self.y1), (x, full_size[1] - y))
+                area = graph.DrawRectangle(
+                    (self.x1, full_size[1] - self.y1),
+                    (x, full_size[1] - y),
+                )
 
         self.main_window.UnHide()
 
     # 开始按钮函数
     def start_extracting(self):
         if self.continuously:
+            self.working = True
             self.OCR_thread = OCR_thread(target=self.extracting)
             self.OCR_thread.daemon = True
             self.OCR_thread.start()
@@ -205,6 +216,7 @@ class OCR_window(object):
 
     # 结束按钮函数
     def stop_extracting(self):
+        self.working = False
         if self.continuously:
             self.OCR_thread.stop()
 
@@ -214,6 +226,21 @@ class OCR_window(object):
         im = im.convert("L")
         im = threshold_ways[self.threshold_way](im, self.threshold)
         im.save('Area.png')
+
+    # 文字处理
+    def text_process(self, text):
+        text = text.replace('|', '')
+        text = text.replace('「', '')
+        text = text.replace('」', '')
+        text = text.replace('[', '')
+        text = text.replace(']', '')
+        self.text = text
+        if self.jbeijing:
+            dll_path = os.path.join(self.jbeijing_path, DLL)
+            if os.path.exists(dll_path):
+                self.text_translated = jbeijing(text.replace('\n', ''), dll_path)
+                text += '\n\n' + self.text_translated
+        return text
 
     # 截取矩形区域图片，进行图片处理，并进行文字识别
     def extracting(self):
@@ -227,17 +254,12 @@ class OCR_window(object):
         im.save('Area.png')
 
         self.image_process()
-
         self.main_window['image'].update('Area.png')
 
         im = Image.open('Area.png')
-        text_extract = pytesseract.image_to_string(
-            im,
-            lang=languages[self.language],
-            config='--psm 6',
-        )
-
-        self.main_window['text_extract'].update(text_extract)
+        text_extract = OCR(im, languages[self.language])
+        text = self.text_process(text_extract)
+        self.main_window['text_extract'].update(text)
 
         if self.copy:
             copy(text_extract)
@@ -266,7 +288,7 @@ class OCR_window(object):
                     lang_translate,
                     key='language',
                     default_value=self.language,
-                    size=(100, 10),
+                    size=(14,),
                 ),
             ],
             [
@@ -285,11 +307,19 @@ class OCR_window(object):
             ],
             [
                 sg.Text('截屏间隔：'),
-                sg.Input(key='interval', default_text=self.interval),
+                sg.Input(
+                    key='interval',
+                    default_text=self.interval,
+                    size=(17,),
+                ),
             ],
             [
                 sg.Text('复制到剪切板：'),
-                sg.Checkbox('', key='copy', default=self.copy)
+                sg.Checkbox(
+                    '',
+                    key='copy',
+                    default=self.copy,
+                )
             ],
             [
                 sg.Text('阈值化方法：'),
@@ -297,7 +327,7 @@ class OCR_window(object):
                     threshold_name,
                     key='threshold_way',
                     default_value=self.threshold_way,
-                    size=(100, 10),
+                    size=(12,),
                 ),
             ],
             [
@@ -312,6 +342,26 @@ class OCR_window(object):
                     tick_interval=255,
                 ),
             ],
+            [
+                sg.Text('Jbeijing：'),
+                sg.Checkbox(
+                    '',
+                    key='jbeijing',
+                    default=self.jbeijing,
+                )
+            ],
+            [
+                sg.Text('Jbeijing路径：'),
+                sg.Input(
+                    key='jbeijing_path',
+                    default_text=self.jbeijing_path,
+                    size=(18,),
+                ),
+                sg.FolderBrowse(
+                    '目录',
+                    key='jbeijing_dir',
+                ),
+            ],
             [sg.Button('更改')],
         ]
         config_layout = [
@@ -320,13 +370,13 @@ class OCR_window(object):
         config_window = sg.Window(
             '设置',
             config_layout,
-            size=(500, 600),
+            size=(600, 600),
             alpha_channel=self.alpha,
         )
 
         while True:
             event, values = config_window.read(timeout=10)
-            if event in (None,):
+            if event is None:
                 break
             self.alpha = values['alpha']
             self.main_window.SetAlpha(self.alpha)
@@ -341,6 +391,8 @@ class OCR_window(object):
                     self.copy = values['copy']
                     self.threshold_way = values['threshold_way']
                     self.threshold = values['threshold']
+                    self.jbeijing = values['jbeijing']
+                    self.jbeijing_path = values['jbeijing_path']
 
                     self.save_config()
                     break
@@ -349,11 +401,59 @@ class OCR_window(object):
     # 帮助按钮函数
     def help(self):
         info = '\
-截取屏幕上的某一区域，用鼠标划定区域，划定时可按右键撤销划定区域，划定完按回车；若想取消划定操作，按ESC键。\n\n\
+截取屏幕上的某一区域，用鼠标划定区域，划定完按回车；若想取消划定操作，按ESC键。\n\n\
 若设置中选择单次截屏，则截取完直接显示。\n\n\
 若设置中选择连续截屏，则截取完后按开始，进行某一间隔的连续识别；按结束则结束识别。\n\n\
 根据程序显示的图片效果，可以调整阈值和阈值化方式来使得图片中的文字更加容易被识别。'
         sg.Popup(info, title='帮助')
+
+    def attach(self):
+        self.main_window.Hide()
+
+        float_layout = [
+            [
+                sg.Text(
+                    self.text,
+                    key='text',
+                )
+            ],
+            [
+                sg.Text(
+                    '',
+                )
+            ],
+            [
+                sg.Text(
+                    self.text,
+                    key='text_translated',
+                )
+            ],
+        ]
+        float_window = sg.Window(
+            '',
+            float_layout,
+            alpha_channel=self.alpha,
+            auto_size_text=True,
+            margins=(0, 0),
+            element_padding=(0, 0),
+            resizable=True,
+            force_toplevel=True,
+            keep_on_top=True,
+            grab_anywhere=True
+        )
+
+        while True:
+            event, values = float_window.read(timeout=self.interval*1000)
+            if event is None:
+                break
+            if self.working:
+                text = self.text
+                text_translated = self.text_translated
+                float_window['text'].update(text)
+                float_window['text_translated'].update(text_translated)
+
+        float_window.close()
+        self.main_window.UnHide()
 
 
 if __name__ == '__main__':
@@ -362,3 +462,5 @@ if __name__ == '__main__':
         os.remove('Screenshot.png')
     if os.path.exists('Area.png'):
         os.remove('Area.png')
+    if os.path.exists('GPS.txt'):
+        os.remove('GPS.txt')

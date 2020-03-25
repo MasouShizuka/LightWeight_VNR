@@ -1,5 +1,3 @@
-from PIL import Image
-
 def THRESH_BINARY(im, threshold):
     img = im.point(lambda x: 255 if x > threshold else 0, '1')
     return img
@@ -22,3 +20,4 @@ threshold_ways = {
     'TOZERO': THRESH_TOZERO,
     'TOZERO_INV': THRESH_TOZERO_INV,
 }
+threshold_name = [i for i in threshold_ways]
