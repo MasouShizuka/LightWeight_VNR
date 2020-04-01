@@ -153,13 +153,14 @@ class OCR_window(object):
                             sg.Text('截屏方式：'),
                             sg.Radio(
                                 '单次截屏',
-                                'continuously',
+                                'once_or_continuously',
                                 key='once',
                                 default=not self.configs['continuously'],
                             ),
                             sg.Radio(
                                 '连续截屏',
-                                'continuously',
+                                'once_or_continuously',
+                                key='continuously',
                                 default=self.configs['continuously'],
                             ),
                         ],
@@ -240,12 +241,9 @@ class OCR_window(object):
                             sg.Input(
                                 key='jbeijing_path',
                                 default_text=self.configs['jbeijing_path'],
-                                size=(18, 1),
+                                size=(57, 1),
                             ),
-                            sg.FolderBrowse(
-                                '目录',
-                                key='jbeijing_dir',
-                            ),
+                            sg.FolderBrowse('目录', key='jbeijing_dir'),
                         ],
                     ],
                     pad=(10, 10),
@@ -261,12 +259,9 @@ class OCR_window(object):
                             sg.TabGroup(
                                 [
                                     [
-                                        sg.Tab('界面', config_interface,
-                                               key='config_interface'),
-                                        sg.Tab('光学', config_OCR,
-                                               key='config_OCR'),
-                                        sg.Tab('翻译', config_translate,
-                                               key='config_translate'),
+                                        sg.Tab('界面', config_interface),
+                                        sg.Tab('光学', config_OCR),
+                                        sg.Tab('翻译', config_translate),
                                     ]
                                 ],
                                 tab_location='lefttop',
@@ -314,16 +309,11 @@ class OCR_window(object):
     def save_config(self, values):
         confirm = sg.PopupYesNo('确认保存吗', title='确认')
         if confirm == 'Yes':
-            self.configs['alpha'] = values['alpha']
-            self.configs['language'] = values['language']
-            self.configs['continuously'] = not values['once']
-            self.configs['interval'] = int(values['interval'])
-            self.configs['copy'] = values['copy']
-            self.configs['threshold_way'] = values['threshold_way']
-            self.configs['threshold'] = values['threshold']
-            self.configs['jbeijing'] = values['jbeijing']
-            self.configs['jbeijing_path'] = values['jbeijing_path']
-
+            for i in self.configs:
+                if i == 'interval':
+                    self.configs[i] = int(values[i])
+                else:
+                    self.configs[i] = values[i]
             with open('config.json', 'w') as f:
                 json.dump(self.configs, f, indent=4)
 
@@ -426,8 +416,7 @@ class OCR_window(object):
     def image_process(self):
         im = Image.open("Area.png")
         im = im.convert("L")
-        im = threshold_ways[self.configs['threshold_way']](
-            im, self.configs['threshold'])
+        im = threshold_ways[self.configs['threshold_way']](im, self.configs['threshold'])
         im.save('Area.png')
 
     # 文字处理
@@ -441,8 +430,7 @@ class OCR_window(object):
         if self.configs['jbeijing']:
             dll_path = os.path.join(self.configs['jbeijing_path'], DLL)
             if os.path.exists(dll_path):
-                self.text_translated = jbeijing(
-                    text.replace('\n', ''), dll_path)
+                self.text_translated = jbeijing(text.replace('\n', ''), dll_path)
                 text += '\n\n' + self.text_translated
         return text
 
@@ -466,7 +454,7 @@ class OCR_window(object):
         self.main_window['text_extract'].update(text)
 
         if self.configs['copy']:
-            copy(text_extract)
+            copy(self.text)
 
         if self.configs['continuously']:
             sleep(self.configs['interval'])
@@ -475,21 +463,13 @@ class OCR_window(object):
     def attach(self):
         float_layout = [
             [
-                sg.Text(
-                    self.text,
-                    key='text',
-                )
+                sg.Text(self.text, key='text')
             ],
             [
-                sg.Text(
-                    '',
-                )
+                sg.Text('')
             ],
             [
-                sg.Text(
-                    self.text,
-                    key='text_translated',
-                )
+                sg.Text(self.text, key='text_translated')
             ],
         ]
         float_window = sg.Window(
@@ -502,7 +482,7 @@ class OCR_window(object):
             resizable=True,
             force_toplevel=True,
             keep_on_top=True,
-            grab_anywhere=True
+            grab_anywhere=True,
         )
 
         while True:
