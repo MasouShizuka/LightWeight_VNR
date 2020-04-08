@@ -6,15 +6,21 @@ CODEPAGE_JA = 932
 CODEPAGE_GB = 936
 CODEPAGE_BIG5 = 950
 
+jbeijing_to = {
+      '简体中文': CODEPAGE_GB,
+      '繁体中文': CODEPAGE_BIG5,
+}
+jbeijing_translate = [i for i in jbeijing_to]
+
 # 借鉴了VNR中调用Jbeijing的方法
-def jbeijing(text, dll_path):
+def jbeijing(text, dll_path, to):
       dll = CDLL(dll_path)
       out = create_unicode_buffer(BUFFER_SIZE)
       buf = create_unicode_buffer(BUFFER_SIZE)
       dll.JC_Transfer_Unicode(
             0,
             CODEPAGE_JA,
-            CODEPAGE_GB,
+            to,
             1,
             1,
             text,

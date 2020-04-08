@@ -1,6 +1,8 @@
 .idea
 .vscode
 __pycache__
+Textractor
 Tesseract-OCR
+jbeijing
 config.json
 main.exe
