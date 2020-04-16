@@ -5,7 +5,7 @@ import json
 import psutil
 from config import configs
 from time import sleep
-from my_thread import My_Thread
+from loop_thread import Loop_Thread
 from subprocess import Popen, PIPE
 from PIL import Image
 from pyautogui import position, screenshot, size
@@ -184,10 +184,10 @@ class Main_Window(object):
         translate_jbeijing = [
             [
                 sg.Frame(
-                    'Jbeijing',
+                    'JBeijing',
                     [
                         [
-                            sg.Text('Jbeijing：'),
+                            sg.Text('JBeijing：'),
                             sg.Checkbox(
                                 '启用',
                                 key='jbeijing',
@@ -195,7 +195,7 @@ class Main_Window(object):
                             )
                         ],
                         [
-                            sg.Text('Jbeijing路径：'),
+                            sg.Text('JBeijing路径：'),
                             sg.Input(
                                 key='jbeijing_path',
                                 default_text=self.configs['jbeijing_path'],
@@ -706,7 +706,7 @@ dll注入后，游戏进程不关，则再次打开程序只需启动Textractor�
         texthook_path = os.path.join(self.configs['textractor_path'], 'texthook.dll')
         if os.path.exists(TextractorCLI_path) and os.path.exists(texthook_path):
             self.textractor_working = True
-            self.textractor_thread = My_Thread(target=self.textractor_work)
+            self.textractor_thread = Loop_Thread(target=self.textractor_work)
             self.textractor_thread.daemon = True
             self.textractor_thread.start()
         else:
@@ -865,7 +865,7 @@ dll注入后，游戏进程不关，则再次打开程序只需启动Textractor�
         else:
             if self.configs['continuously']:
                 self.OCR_working = True
-                self.OCR_thread = My_Thread(target=self.OCR_work)
+                self.OCR_thread = Loop_Thread(target=self.OCR_work)
                 self.OCR_thread.daemon = True
                 self.OCR_thread.start()
             else:

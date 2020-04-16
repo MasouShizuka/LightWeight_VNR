@@ -1,6 +1,6 @@
 from threading import Thread, Event
 
-class My_Thread(Thread):
+class Loop_Thread(Thread):
     def __init__(self, target=None, *args, **kwargs):
         super().__init__()
         self.args = args
