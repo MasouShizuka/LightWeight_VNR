@@ -1,10 +1,10 @@
 import pytesseract
-from os import path
+import os
 
 # 若系统未安装Tesseract-OCR,则需要指定位置
-path_tesseract = path.abspath('.')
-path_cmd = path_tesseract + '/Tesseract-OCR/tesseract.exe'
-path_tessdata = path_tesseract + '/Tesseract-OCR/tessdata'
+path_tesseract = os.path.abspath('.')
+path_cmd = os.path.join(path_tesseract, r'Tesseract-OCR\tesseract.exe')
+path_tessdata = os.path.join(path_tesseract, r'Tesseract-OCR\tessdata')
 
 pytesseract.pytesseract.tesseract_cmd = path_cmd
 tessdata_dir_config = '--tessdata-dir "' + path_tessdata + '"'
@@ -17,7 +17,7 @@ languages = {
 }
 lang_translate = [i for i in languages]
 
-def OCR(im, language):
+def tesseract_OCR(im, language):
     text_extract = pytesseract.image_to_string(
         im,
         lang=language,
