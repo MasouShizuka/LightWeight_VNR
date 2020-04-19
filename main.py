@@ -6,6 +6,7 @@ import psutil
 from config import config
 from game import game
 from loop_thread import Loop_Thread, Thread
+from process_ignore import process_ignore_list
 from time import sleep
 from subprocess import Popen, PIPE
 from PIL import Image
@@ -878,13 +879,14 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
         for proc in psutil.process_iter():
             try:
                 p = proc.as_dict(attrs=['pid', 'name'])
-                process = str(p['pid']) + ' - ' + str(p['name'])
+                if p['name'] not in process_ignore_list:
+                    process = str(p['pid']) + ' - ' + str(p['name'])
 
-                if p['pid'] == self.game['game_id'] and \
-                   p['name'] == self.game['game_name']:
-                    game_process = process
+                    if p['pid'] == self.game['game_id'] and \
+                       p['name'] == self.game['game_name']:
+                        game_process = process
 
-                processes.append(process)
+                    processes.append(process)
             except psutil.NoSuchProcess:
                 pass
         self.main_window['process'].update(values=processes)
@@ -960,8 +962,9 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
                 else:
                     curr_hook = self.main_window['hook'].get()
 
-                if curr_hook and \
-                   hook == curr_hook.split()[0] and \
+                content = rule.match(curr_hook)
+                if content and \
+                   hook == content.group(1) and \
                    text != self.text:
                     self.text_process(text)
 
