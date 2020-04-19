@@ -1,6 +1,6 @@
 import os
 
-configs = {
+config = {
     # 界面相关
     'alpha': 1.0,
     'copy': False,
@@ -11,7 +11,7 @@ configs = {
 
     # OCR相关
     'OCR_language': '日文',
-    'continuously': False,
+    'OCR_continuously': False,
     'OCR_interval': 1,
     'threshold_way': 'BINARY',
     'threshold': 127,
@@ -22,9 +22,19 @@ configs = {
     'jbeijing_to': '简体中文',
     'youdao_path': os.path.abspath('.') + r'\有道词典',
     'youdao_interval': 1.0,
+    'youdao_get_translate': True,
+
+    # TTS相关
+    'yukari2_path': os.path.abspath('.') + r'\Yukari',
+    'yukari2_constantly': False,
+    'yukari2_aside': True,
+    'yukari2_character': True,
 
     # 文本相关
     'deduplication': 1,
     'garbage_chars': '',
     're': r'.*',
+
+    # 浮动窗口相关
+    'float_interval': 0.1,
 }
