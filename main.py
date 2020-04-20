@@ -48,9 +48,9 @@ class Main_Window(object):
         self.x2 = 0
         self.y2 = 0
         # 文本相关变量
-        self.text = None
-        self.text_jbeijing_translated = None
-        self.text_youdao_translated = None
+        self.text = ''
+        self.text_jbeijing_translate = ''
+        self.text_youdao_translate = ''
         # 有道相关变量
         self.youdao = None
         # TTS相关变量
@@ -282,21 +282,21 @@ class Main_Window(object):
                             sg.FolderBrowse('目录', key='youdao_dir'),
                         ],
                         [
-                            sg.Text('翻译间隔：'),
-                            sg.Input(
-                                key='youdao_interval',
-                                default_text=self.config['youdao_interval'],
-                                size=(16, 1),
-                            ),
-                            sg.Text('秒'),
-                        ],
-                        [
                             sg.Text('抓取翻译：'),
                             sg.Checkbox(
                                 '启用',
                                 key='youdao_get_translate',
                                 default=self.config['youdao_get_translate'],
                             )
+                        ],
+                        [
+                            sg.Text('抓取间隔：'),
+                            sg.Input(
+                                key='youdao_interval',
+                                default_text=self.config['youdao_interval'],
+                                size=(16, 1),
+                            ),
+                            sg.Text('秒'),
                         ],
                     ],
                     pad=(10, 10),
@@ -791,7 +791,8 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
             for i in self.config:
                 if i == 'alpha':
                     self.main_window.SetAlpha(values['alpha'])
-                elif 'interval' in i:
+                    
+                if 'interval' in i:
                     self.config[i] = float(values[i])
                 elif i == 'deduplication':
                     self.config[i] = int(values[i])
@@ -831,6 +832,8 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
 
     # 文字处理
     def text_process(self, text):
+        text = text.strip()
+
         text = text[::int(self.config['deduplication'])]
 
         for i in re.split(r'\s+', self.config['garbage_chars']):
@@ -858,15 +861,13 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
             yukari2_thread.start()
             # self.yukari2.read_text(self.text, pid=pid)
 
-        self.text_youdao_translated = ''
         if self.youdao and self.youdao.working:
-            self.text_youdao_translated = self.youdao.translate(text, pid=pid)
+            self.text_youdao_translate = self.youdao.translate(text, pid=pid)
 
-        self.text_jbeijing_translated = ''
         if self.config['jbeijing']:
             dll_path = os.path.join(self.config['jbeijing_path'], DLL)
             if os.path.exists(dll_path):
-                self.text_jbeijing_translated = jbeijing(
+                self.text_jbeijing_translate = jbeijing(
                     text,
                     dll_path,
                     jbeijing_to[self.config['jbeijing_to']],
@@ -964,8 +965,7 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
 
                 content = rule.match(curr_hook)
                 if content and \
-                   hook == content.group(1) and \
-                   text != self.text:
+                   hook == content.group(1):
                     self.text_process(text)
 
                     if not self.float:
@@ -974,10 +974,10 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
                         self.main_window['content'].update('\n\n' + self.text + '\n\n', append=True)
 
                         if self.config['jbeijing']:
-                            self.main_window['content'].update('Jbeijing:\n' + self.text_jbeijing_translated + '\n\n', append=True)
+                            self.main_window['content'].update('Jbeijing:\n' + self.text_jbeijing_translate + '\n\n', append=True)
 
                         if self.youdao and self.youdao.get_translate:
-                            self.main_window['content'].update('有道:\n' + self.text_youdao_translated + '\n\n', append=True)
+                            self.main_window['content'].update('有道:\n' + self.text_youdao_translate + '\n\n', append=True)
 
             sleep(self.config['textractor_interval'])
 
@@ -1168,10 +1168,10 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
                 self.main_window['text_OCR'].update(self.text + '\n\n')
 
                 if self.config['jbeijing']:
-                    self.main_window['text_OCR'].update('JBeijing:\n' + self.text_jbeijing_translated + '\n\n', append=True)
+                    self.main_window['text_OCR'].update('JBeijing:\n' + self.text_jbeijing_translate + '\n\n', append=True)
 
                 if self.youdao and self.youdao.get_translate:
-                    self.main_window['text_OCR'].update('有道:\n' + self.text_youdao_translated + '\n\n', append=True)
+                    self.main_window['text_OCR'].update('有道:\n' + self.text_youdao_translate + '\n\n', append=True)
 
         if self.config['OCR_continuously']:
             sleep(self.config['OCR_interval'])
@@ -1229,16 +1229,26 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
 
         self.main_window.Minimize()
 
+        prev_text = ''
+        prev_text_jbeijing = ''
+        prev_text_youdao = ''
         while True:
             event, values = window.read(timeout=self.config['float_interval'] * 1000)
             if event is None:
                 break
             if self.textractor_working or self.OCR_working:
-                window['text'].update(self.text)
-                if self.config['jbeijing']:
-                    window['text_jbeijing_translated'].update(self.text_jbeijing_translated)
-                if self.youdao and self.youdao.get_translate:
-                    window['text_youdao_translated'].update(self.text_youdao_translated)
+                if prev_text != self.text:
+                    prev_text = self.text
+                    window['text'].update(self.text)
+                if self.config['jbeijing'] and \
+                   prev_text_jbeijing != self.text_jbeijing_translate:
+                    prev_text_jbeijing = self.text_jbeijing_translate
+                    window['text_jbeijing_translated'].update(self.text_jbeijing_translate)
+                if self.youdao and \
+                   self.youdao.get_translate and \
+                   prev_text_youdao != self.text_youdao_translate:
+                    prev_text_youdao = self.text_youdao_translate
+                    window['text_youdao_translated'].update(self.text_youdao_translate)
 
         self.float = False
         window.close()
