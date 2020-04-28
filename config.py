@@ -23,6 +23,8 @@ config = {
     'youdao_path': os.path.abspath('.') + r'\有道词典',
     'youdao_interval': 1.0,
     'youdao_get_translate': True,
+    'baidu_appid': '',
+    'baidu_key': '',
 
     # TTS相关
     'yukari2_path': os.path.abspath('.') + r'\Yukari',
