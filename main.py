@@ -12,7 +12,7 @@ from subprocess import Popen, PIPE
 from PIL import Image
 from pyautogui import position, screenshot, size
 from pyperclip import copy
-from OCR.tesseract_OCR import languages, lang_translate, tesseract_OCR
+from OCR.tesseract_ocr import languages, lang_translate, tesseract_OCR
 from OCR.threshold_ways import threshold_ways, threshold_name
 from Translator.jbeijing import jbeijing_to, jbeijing_translate, jbeijing
 
@@ -53,6 +53,9 @@ class Main_Window(object):
         self.text_youdao_translate = ''
         # 有道相关变量
         self.youdao = None
+        # 百度相关变量
+        self.baidu = None
+        self.text_baidu_translate = ''
         # TTS相关变量
         self.yukari2 = None
 
@@ -104,6 +107,7 @@ class Main_Window(object):
                     sg.Popup('提示', '有道词典路径不正确')
                 else:
                     from Translator.youdao import Youdao
+
                     self.youdao = Youdao(
                         path=self.config['youdao_path'],
                         interval=self.config['youdao_interval'],
@@ -114,6 +118,24 @@ class Main_Window(object):
                 if self.youdao:
                     self.youdao.stop()
                     self.youdao = None
+
+            elif event == '启动百度':
+                from Translator.baidu import Baidu
+                confirm = sg.PopupYesNo(
+                    "请确认：\n  APP ID: " + self.config['baidu_appid'] + "\n  密钥: "+ self.config['baidu_key'] + "\n\n如果与填入信息不一致请先进行保存" ,
+                    title='确认')
+                if confirm == 'Yes':
+                    self.baidu = Baidu(
+                        appid=self.config['baidu_appid'],
+                        key=self.config['baidu_key'],
+                    )
+                    self.baidu.enable()
+
+            elif event == '关闭百度':
+                if self.baidu:
+                    self.baidu.disable()
+                    self.baidu = None
+                print("close baidu")
 
             # 语音界面
             elif event == '启动Yukari2':
@@ -303,6 +325,38 @@ class Main_Window(object):
             ],
         ]
 
+        translate_baidu = [
+            [
+                sg.Frame(
+                    '百度翻译api',
+                    [
+                        [
+                            sg.Text('百度翻译'),
+                            sg.Button('启动百度'),
+                            sg.Button('关闭百度', pad=(20, 0)),
+                        ],
+                        [
+                            sg.Text('APP ID：'),
+                            sg.Input(
+                                key='baidu_appid',
+                                default_text=self.config['baidu_appid'],
+                                size=(57, 1),
+                            ),
+                        ],
+                        [
+                            sg.Text('密钥：'),
+                            sg.Input(
+                                key='baidu_key',
+                                default_text=self.config['baidu_key'],
+                                size=(59, 1),
+                            ),
+                        ],
+                    ],
+                    pad=(10, 10),
+                ),
+            ],
+        ]
+
         translate_layout = [
             [
                 sg.Column(
@@ -311,6 +365,7 @@ class Main_Window(object):
                             sg.TabGroup(
                                 [
                                     [
+                                        sg.Tab('百度', translate_baidu),
                                         sg.Tab('有道', translate_youdao),
                                         sg.Tab('北京', translate_jbeijing),
                                     ]
@@ -677,6 +732,23 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
         help_translate = [
             [
                 sg.Frame(
+                    '百度',
+                    [
+                        [
+                            sg.Text(
+                                '\
+注意：百度翻译API是在线翻译，需要使用百度账号免费申请api\n\
+1.https://api.fanyi.baidu.com/ 进入百度翻译开放平台。\n\
+2.按照指引完成api开通，只需要申请“通用翻译API”。\n\
+3.完成申请后点击顶部"管理控制台"，在申请信息一栏可获取APP ID与密钥。',
+                                pad=(10, 10),
+                            ),
+                        ],
+                    ],
+                ),
+            ],
+            [
+                sg.Frame(
                     '有道',
                     [
                         [
@@ -798,6 +870,10 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
                 else:
                     self.config[i] = values[i]
 
+            if self.baidu:
+                self.baidu.set_appid(self.config['baidu_appid'])
+                self.baidu.set_key(self.config['baidu_key'])
+
             if self.youdao:
                 self.youdao.set_interval(self.config['youdao_interval'])
                 self.youdao.set_get_translate(self.config['youdao_get_translate'])
@@ -864,6 +940,9 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
 
         if self.youdao and self.youdao.working:
             self.text_youdao_translate = self.youdao.translate(text, pid=pid)
+
+        if self.baidu and self.baidu.enabled:
+            self.text_baidu_translate = self.baidu.translate(text)
 
         if self.config['jbeijing']:
             self.text_jbeijing_translate = jbeijing(
@@ -1203,6 +1282,14 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
             ),
         ]
 
+        text_baidu = [
+            sg.Text('百度'),
+            sg.Frame(
+                '',
+                [[sg.Multiline('', key='text_baidu_translated', size=(75, 2))]],
+            ),
+        ]
+
         layout = [
             text,
         ]
@@ -1212,6 +1299,9 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
 
         if self.youdao and self.youdao.get_translate:
             layout.append(text_youdao)
+
+        if self.baidu and self.baidu.enabled:
+            layout.append(text_baidu)
 
         window = sg.Window(
             '',
@@ -1231,6 +1321,8 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
         prev_text = ''
         prev_text_jbeijing = ''
         prev_text_youdao = ''
+        prev_text_baidu = ''
+
         while True:
             event, values = window.read(timeout=self.config['float_interval'] * 1000)
             if event is None:
@@ -1248,6 +1340,12 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
                    prev_text_youdao != self.text_youdao_translate:
                     prev_text_youdao = self.text_youdao_translate
                     window['text_youdao_translated'].update(self.text_youdao_translate)
+                if self.baidu and \
+                   self.baidu.enabled and \
+                   prev_text_baidu != self.text_baidu_translate:
+                    prev_text_baidu = self.text_baidu_translate
+                    window['text_baidu_translated'].update(self.text_baidu_translate)
+
 
         self.float = False
         window.close()

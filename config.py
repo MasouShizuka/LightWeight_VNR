@@ -22,7 +22,8 @@ config = {
     'jbeijing_to': '简体中文',
     'youdao_path': os.path.abspath('.') + r'/有道词典',
     'youdao_get_translate': True,
-    'youdao_interval': 1.0,
+    'baidu_appid': '',
+    'baidu_key': '',
 
     # TTS相关
     'yukari2_path': os.path.abspath('.') + r'/Yukari2',
