@@ -6,8 +6,8 @@ config = {
     'copy': False,
 
     # Textractor相关
-    'textractor_path': os.path.abspath('.') + r'\Textractor',
-    'textractor_interval': 0.1,
+    'textractor_path': os.path.abspath('.') + r'/Textractor',
+    'textractor_interval': 0,
 
     # OCR相关
     'OCR_language': '日文',
@@ -18,14 +18,14 @@ config = {
 
     # 翻译相关
     'jbeijing': False,
-    'jbeijing_path': os.path.abspath('.') + r'\jbeijing',
+    'jbeijing_path': os.path.abspath('.') + r'/jbeijing',
     'jbeijing_to': '简体中文',
-    'youdao_path': os.path.abspath('.') + r'\有道词典',
-    'youdao_interval': 1.0,
+    'youdao_path': os.path.abspath('.') + r'/有道词典',
     'youdao_get_translate': True,
+    'youdao_interval': 1.0,
 
     # TTS相关
-    'yukari2_path': os.path.abspath('.') + r'\Yukari',
+    'yukari2_path': os.path.abspath('.') + r'/Yukari2',
     'yukari2_constantly': False,
     'yukari2_aside': True,
     'yukari2_character': True,

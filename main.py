@@ -14,7 +14,7 @@ from pyautogui import position, screenshot, size
 from pyperclip import copy
 from OCR.tesseract_OCR import languages, lang_translate, tesseract_OCR
 from OCR.threshold_ways import threshold_ways, threshold_name
-from Translator.jbeijing import DLL, jbeijing_to, jbeijing_translate, jbeijing
+from Translator.jbeijing import jbeijing_to, jbeijing_translate, jbeijing
 
 sg.theme('DarkGrey5')
 sg.set_options(font=('微软雅黑', 15))
@@ -147,7 +147,6 @@ class Main_Window(object):
 
         if self.youdao:
             self.youdao.stop()
-
         if self.yukari2:
             self.yukari2.stop()
 
@@ -805,6 +804,8 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
 
             if self.yukari2:
                 self.yukari2.working = self.config['yukari2_constantly']
+                self.yukari2.set_aside(self.config['yukari2_aside'])
+                self.yukari2.set_character(self.config['yukari2_character'])
 
             with open('config.json', 'w') as f:
                 json.dump(self.config, f, indent=4)
@@ -832,8 +833,6 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
 
     # 文字处理
     def text_process(self, text):
-        text = text.strip()
-
         text = text[::int(self.config['deduplication'])]
 
         for i in re.split(r'\s+', self.config['garbage_chars']):
@@ -841,8 +840,10 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
 
         rule = re.compile(self.config['re'])
         info = rule.match(text)
-        if info and len(info.groups()):
-            text = ''.join(info.groups())
+        if info:
+            groups = info.groups()
+            if len(groups):
+                text = ''.join(groups)
 
         if self.config['copy']:
             copy(text)
@@ -865,13 +866,11 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
             self.text_youdao_translate = self.youdao.translate(text, pid=pid)
 
         if self.config['jbeijing']:
-            dll_path = os.path.join(self.config['jbeijing_path'], DLL)
-            if os.path.exists(dll_path):
-                self.text_jbeijing_translate = jbeijing(
-                    text,
-                    dll_path,
-                    jbeijing_to[self.config['jbeijing_to']],
-                )
+            self.text_jbeijing_translate = jbeijing(
+                text,
+                self.config['jbeijing_path'],
+                jbeijing_to[self.config['jbeijing_to']],
+            )
 
     # 刷新按钮函数
     def refresh_process_list(self):
@@ -901,15 +900,16 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
 
         TextractorCLI_path = os.path.join(self.config['textractor_path'], 'TextractorCLI.exe')
         texthook_path = os.path.join(self.config['textractor_path'], 'texthook.dll')
-        if os.path.exists(TextractorCLI_path) and os.path.exists(texthook_path):
+        if not os.path.exists(TextractorCLI_path) or \
+           not os.path.exists(texthook_path):
+            sg.Popup('提示', 'Textractor路径不正确')
+        else:
             self.refresh_process_list()
 
             self.textractor_working = True
             self.textractor_thread = Loop_Thread(target=self.textractor_work)
             self.textractor_thread.daemon = True
             self.textractor_thread.start()
-        else:
-            sg.Popup('提示', 'Textractor路径不正确')
 
     # 终止按钮函数
     def textractor_stop(self):
@@ -936,7 +936,7 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
             stderr=PIPE,
             encoding='utf-16-le',
         )
-        rule = re.compile(r'^(\[.+?\]) (.+)$')
+        rule = re.compile(r'^(\[.+?\])\s+(.+)$')
         hooks = []
         hooks_contents = []
         for line in iter(self.cli.stdout.readline, ''):
@@ -964,8 +964,7 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
                     curr_hook = self.main_window['hook'].get()
 
                 content = rule.match(curr_hook)
-                if content and \
-                   hook == content.group(1):
+                if content and hook == content.group(1):
                     self.text_process(text)
 
                     if not self.float:

@@ -51,8 +51,14 @@ class Youdao(object):
             copy(text)
             self.win.Edit2.type_keys("^a^v")
             if self.get_translate:
-                sleep(self.interval)
-                text_translate = self.win.Edit7.texts()[0]
+                text_translate = ''
+                while True:
+                    sleep(self.interval)
+                    temp = self.win.Edit7.texts()[0]
+                    if text_translate != temp:
+                        text_translate = temp
+                    else:
+                        break
             else:
                 text_translate = ''
             return text_translate

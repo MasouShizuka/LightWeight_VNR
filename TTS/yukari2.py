@@ -85,6 +85,9 @@ class Yukari2(object):
         self.character = kw['character']
         self.app = None
         self.win = None
+        self.edit = None
+        self.play_button = None
+        self.stop_button = None
 
     def set_path(self, path):
         self.path = path
@@ -116,10 +119,20 @@ class Yukari2(object):
 
     def read(self, text):
         try:
-            self.win = self.app.top_window()
-            self.win.Button7.click()
-            self.win.Edit.set_text(text)
-            self.win.Button6.click()
+            if not self.win:
+                self.win = self.app.top_window()
+            if not self.edit:
+                self.edit = self.win.Edit
+            # if not self.play_button:
+            #     self.play_button = self.win.Button6
+            # if not self.stop_button:
+            #     self.stop_button = self.win.Button7
+            # self.stop_button.click()
+            # self.edit.set_text(text)
+            # self.play_button.click()
+            self.win.menu_select("文本->停止")
+            self.edit.set_text(text)
+            self.win.menu_select("文本->播放")
         except:
             pass
 
