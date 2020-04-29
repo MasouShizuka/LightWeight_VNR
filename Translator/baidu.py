@@ -11,10 +11,10 @@ class Baidu(object):
         self.enabled = False
 
     def set_appid(self, appid):
-        self.appid = appid
+        self.appid = str(appid)
 
     def set_key(self, key):
-        self.key = key
+        self.key = str(key)
 
     def enable(self):
         self.enabled = True
@@ -36,38 +36,40 @@ class Baidu(object):
             s = MAPPING[code]
             return s
         except Exception as e:
-            print (e)
+            print(e)
             return "未知错误"
 
     def translate(self, text):
-        if self.enabled:
-            appid = self.appid
-            secretKey = self.key
-            httpClient = None
-            myurl = '/api/trans/vip/translate'
-            fromLang = 'auto'   #原文语种
-            toLang = 'zh'   #译文语种
-            salt = random.randint(32768, 65536)
-            q= text
-            sign = appid + q + str(salt) + secretKey
-            sign = hashlib.md5(sign.encode()).hexdigest()
-            myurl = myurl + '?appid=' + appid + '&q=' + urllib.parse.quote(q) + '&from=' + fromLang + '&to=' + toLang + '&salt=' + str(
-            salt) + '&sign=' + sign
+        appid = self.appid
+        secretKey = self.key
+        httpClient = None
+        myurl = '/api/trans/vip/translate'
+        fromLang = 'auto'   #原文语种
+        toLang = 'zh'       #译文语种
+        salt = random.randint(32768, 65536)
+        q = text
+        sign = appid + q + str(salt) + secretKey
+        sign = hashlib.md5(sign.encode()).hexdigest()
+        myurl = myurl \
+                + '?appid=' + appid \
+                + '&q=' + urllib.parse.quote(q) \
+                + '&from=' + fromLang \
+                + '&to=' + toLang \
+                + '&salt=' + str(salt) \
+                + '&sign=' + sign
+        try:
+            httpClient = http.client.HTTPConnection('api.fanyi.baidu.com')
+            httpClient.request('GET', myurl)
+            response = httpClient.getresponse()
+            res = json.loads(response.read().decode("utf-8"))
             try:
-                httpClient = http.client.HTTPConnection('api.fanyi.baidu.com')
-                httpClient.request('GET', myurl)
-                response = httpClient.getresponse()
-                res = json.loads(response.read().decode("utf-8"))
-                try:
-                    code = res['error_code']
-                    return self.errorhandel(code)
-                except Exception as e:
-                    print (e)
-                    return res['trans_result'][0]['dst']
+                code = res['error_code']
+                return self.errorhandel(code)
             except Exception as e:
-                print (e)
-            finally:
-                if httpClient:
-                    httpClient.close()
-
-    
+                print(e)
+                return res['trans_result'][0]['dst']
+        except Exception as e:
+            print(e)
+        finally:
+            if httpClient:
+                httpClient.close()
