@@ -20,7 +20,7 @@ def jbeijing(text, dll_path, to):
        not os.path.exists(dll):
         return ''
     try:
-        dll = CDLL(dll_path)
+        dll = CDLL(dll)
         out = create_unicode_buffer(BUFFER_SIZE)
         buf = create_unicode_buffer(BUFFER_SIZE)
         dll.JC_Transfer_Unicode(
