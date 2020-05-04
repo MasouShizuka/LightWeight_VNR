@@ -4,7 +4,7 @@ import re
 import json
 import psutil
 from config import config
-from game import game
+from game import game, start_mode
 from loop_thread import Loop_Thread, Thread
 from process_ignore import process_ignore_list
 from time import sleep
@@ -18,7 +18,7 @@ from Translator.jbeijing import jbeijing_to, jbeijing_translate, jbeijing
 from Translator.baidu import Baidu
 
 sg.theme('DarkGrey5')
-sg.set_options(font=('微软雅黑', 15))
+sg.set_options(font=('Microsoft YaHei Mono', 15))
 
 class Main_Window(object):
     def __init__(self):
@@ -33,6 +33,7 @@ class Main_Window(object):
         self.game = game
         # 读取游戏信息
         self.load_game()
+        self.games = [i['name'] for i in self.game['game_list']]
 
         # Textractor相关变量
         self.textractor_thread = None
@@ -81,6 +82,15 @@ class Main_Window(object):
             if event is None:
                 break
 
+            #游戏界面
+            elif event == 'game_list':
+                self.get_game_info()
+            elif event == '添加':
+                self.add_game()
+            elif event == '删除':
+                self.delete_game()
+            elif event == '启动游戏':
+                self.start_game()
             # 抓取界面
             elif event == '刷新':
                 self.refresh_process_list()
@@ -100,7 +110,7 @@ class Main_Window(object):
             # 光学界面
             elif event == '截取':
                 self.get_area()
-            elif event == '开始':
+            elif event == '连续':
                 self.OCR_start()
             elif event == '结束':
                 self.OCR_stop()
@@ -144,7 +154,7 @@ class Main_Window(object):
                     self.yukari2.stop()
                     self.yukari2 = None
             elif event == '阅读当前文本':
-                self.yukari2.read_text(self.text)
+                self.yukari2.read(self.text)
 
             # 设置界面
             elif event.startswith('保存'):
@@ -163,6 +173,81 @@ class Main_Window(object):
 
     # 界面设置
     def interface(self):
+        game_list = [
+            [
+                sg.Listbox(
+                    key='game_list',
+                    values=self.games,
+                    enable_events=True,
+                    size=(82, 10),
+                )
+            ],
+        ]
+
+        game_info = [
+            [
+                sg.Text('游戏名称：'),
+                sg.Input(
+                    key='game_name',
+                    default_text='',
+                    size=(72, 1),
+                ),
+            ],
+            [
+                sg.Text('程序目录：'),
+                sg.Input(
+                    key='game_path',
+                    default_text='',
+                    size=(67, 1),
+                ),
+                sg.FileBrowse(
+                    '目录',
+                    key='game_dir',
+                    size=(5, 1),
+                    font=('微软雅黑', 11)
+                ),
+            ],
+            [
+                sg.Text('特殊码：  '),
+                sg.Input(
+                    key='game_hook_code',
+                    default_text='',
+                    size=(72, 1),
+                ),
+            ],
+            [
+                sg.Text('启动方式：'),
+                sg.Combo(
+                    start_mode,
+                    key='game_start_mode',
+                    default_value='',
+                    size=(71, 1),
+                    readonly=True,
+                ),
+            ],
+            [
+                sg.Button('添加', pad=(20, 0)),
+                sg.Button('删除', pad=(20, 0)),
+                sg.Button('启动游戏', pad=(20, 0)),
+            ],
+        ]
+
+        game_layout = [
+            [
+                sg.Frame(
+                    '游戏列表',
+                    layout=game_list,
+                )
+            ],
+            [
+                sg.Frame(
+                    '游戏信息',
+                    layout=game_info,
+                    element_justification='c',
+                )
+            ],
+        ]
+
         textractor_buttons = [
             [sg.Button('启动TR', pad=(20, 20))],
             [sg.Button('Attach', pad=(20, 20))],
@@ -178,7 +263,7 @@ class Main_Window(object):
                 sg.Combo(
                     [],
                     key='process',
-                    size=(71, 1),
+                    size=(70, 1),
                 ),
                 sg.Button('刷新', pad=(20, 20)),
             ],
@@ -187,7 +272,7 @@ class Main_Window(object):
                 sg.Combo(
                     [],
                     key='hook',
-                    size=(71, 1),
+                    size=(70, 1),
                     readonly=True,
                 ),
                 sg.Button('固定', pad=(20, 0)),
@@ -218,7 +303,7 @@ class Main_Window(object):
 
         OCR_buttons = [
             [sg.Button('截取', pad=(20, 20))],
-            [sg.Button('开始', pad=(20, 20))],
+            [sg.Button('连续', pad=(20, 20))],
             [sg.Button('结束', pad=(20, 20))],
             [sg.Button('浮动', pad=(20, 20))],
         ]
@@ -236,12 +321,11 @@ class Main_Window(object):
                     'JBeijing',
                     [
                         [
-                            sg.Text('JBeijing：'),
+                            sg.Text('JBeijing：    '),
                             sg.Checkbox(
                                 '启用',
                                 key='jbeijing',
                                 default=self.config['jbeijing'],
-                                pad=(50, 0),
                             )
                         ],
                         [
@@ -254,14 +338,13 @@ class Main_Window(object):
                             sg.FolderBrowse('目录', key='jbeijing_dir'),
                         ],
                         [
-                            sg.Text('翻译语言：'),
+                            sg.Text('翻译语言：    '),
                             sg.Combo(
                                 jbeijing_translate,
                                 key='jbeijing_to',
                                 default_value=self.config['jbeijing_to'],
                                 size=(14, 1),
                                 readonly=True,
-                                pad=(46, 0),
                             ),
                         ],
                     ],
@@ -315,12 +398,10 @@ class Main_Window(object):
         translate_baidu = [
             [
                 sg.Frame(
-                    '百度翻译api',
+                    '百度翻译',
                     [
                         [
                             sg.Text('百度翻译：'),
-                            # sg.Button('启动百度'),
-                            # sg.Button('关闭百度', pad=(20, 0)),
                             sg.Checkbox(
                                 '启用',
                                 key='baidu',
@@ -328,7 +409,7 @@ class Main_Window(object):
                             )
                         ],
                         [
-                            sg.Text('APP ID：   '),
+                            sg.Text('APP ID：  '),
                             sg.Input(
                                 key='baidu_appid',
                                 default_text=self.config['baidu_appid'],
@@ -336,7 +417,7 @@ class Main_Window(object):
                             ),
                         ],
                         [
-                            sg.Text('密钥：       '),
+                            sg.Text('密钥：    '),
                             sg.Input(
                                 key='baidu_key',
                                 default_text=self.config['baidu_key'],
@@ -380,10 +461,10 @@ class Main_Window(object):
                     'Yukari2',
                     [
                         [
-                            sg.Text('Yukari2：'),
-                            sg.Button('启动Yukari2', pad=(20, 20)),
-                            sg.Button('终止Yukari2', pad=(20, 20)),
-                            sg.Button('阅读当前文本', pad=(20, 20)),
+                            sg.Text('Yukari2：   '),
+                            sg.Button('启动Yukari2', pad=(20, 0)),
+                            sg.Button('终止Yukari2', pad=(20, 0)),
+                            sg.Button('阅读当前文本', pad=(20, 0)),
                         ],
                         [
                             sg.Text('Yukari2路径：'),
@@ -395,27 +476,24 @@ class Main_Window(object):
                             sg.FolderBrowse('目录', key='yukari2_dir'),
                         ],
                         [
-                            sg.Text('连续阅读：'),
+                            sg.Text('连续阅读：   '),
                             sg.Checkbox(
                                 '启用',
                                 key='yukari2_constantly',
                                 default=self.config['yukari2_constantly'],
-                                pad=(20, 20),
                             )
                         ],
                         [
-                            sg.Text('阅读内容：'),
+                            sg.Text('阅读内容：   '),
                             sg.Checkbox(
                                 '旁白',
                                 key='yukari2_aside',
                                 default=self.config['yukari2_aside'],
-                                pad=(20, 0),
                             ),
                             sg.Checkbox(
                                 '角色',
                                 key='yukari2_character',
                                 default=self.config['yukari2_character'],
-                                pad=(20, 0),
                             ),
                         ],
                     ],
@@ -486,6 +564,26 @@ class Main_Window(object):
             ],
         ]
 
+        config_game = [
+            [
+                sg.Frame(
+                    'Locale Emulator',
+                    [
+                        [
+                            sg.Text('Locale Emulator路径：'),
+                            sg.Input(
+                                key='locale_emulator_path',
+                                default_text=self.config['locale_emulator_path'],
+                                size=(50, 1),
+                            ),
+                            sg.FolderBrowse('目录', key='locale_emulator_dir'),
+                        ],
+                    ],
+                    pad=(10, 10),
+                )
+            ]
+        ]
+
         config_textractor = [
             [
                 sg.Frame(
@@ -512,7 +610,7 @@ class Main_Window(object):
                     ],
                     pad=(10, 10),
                 )
-            ]
+            ],
         ]
 
         config_OCR = [
@@ -538,21 +636,6 @@ class Main_Window(object):
                 sg.Frame(
                     '截屏',
                     [
-                        [
-                            sg.Text('截屏方式：'),
-                            sg.Radio(
-                                '单次截屏',
-                                'OCR_once_or_continuously',
-                                key='OCR_once',
-                                default=not self.config['OCR_continuously'],
-                            ),
-                            sg.Radio(
-                                '连续截屏',
-                                'OCR_once_or_continuously',
-                                key='OCR_continuously',
-                                default=self.config['OCR_continuously'],
-                            ),
-                        ],
                         [
                             sg.Text('截屏间隔：'),
                             sg.Input(
@@ -648,7 +731,7 @@ class Main_Window(object):
                             sg.Text('秒'),
                         ],
                         [
-                            sg.Text('原文：'),
+                            sg.Text('原文：    '),
                             sg.Checkbox(
                                 '显示',
                                 key='text_origin',
@@ -670,6 +753,7 @@ class Main_Window(object):
                                 [
                                     [
                                         sg.Tab('界面', config_interface),
+                                        sg.Tab('游戏', config_game),
                                         sg.Tab('抓取', config_textractor),
                                         sg.Tab('光学', config_OCR),
                                         sg.Tab('文本', config_text),
@@ -685,6 +769,28 @@ class Main_Window(object):
                     ],
                     element_justification='center',
                 )
+            ],
+        ]
+
+        help_game = [
+            [
+                sg.Frame(
+                    '游戏',
+                    [
+                        [
+                            sg.Text(
+                                '\
+填好游戏名称、程序目录、启动方式、特殊码（没有可不填）后添加即可\n\n\
+程序目录、启动方式必须填，游戏名称若为空，添加时将程序名作为游戏名称\n\n\
+修改游戏信息后按添加即可修改信息\n\n\
+转区运行需在设置中设置Locale Emulator路径\n\n\
+选择一项游戏后按删除即可删除\n\n\
+选择一项游戏后按启动游戏即可启动游戏，并启动Textractor注入dll',
+                                pad=(10, 10),
+                            ),
+                        ],
+                    ],
+                ),
             ],
         ]
 
@@ -717,10 +823,12 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
                         [
                             sg.Text(
                                 '\
-截取屏幕上的某一区域，用鼠标划定区域，划定完按Enter；若想取消划定操作，按ESC键\n\n\
-若设置中选择单次截屏，则截取完直接显示\n\n\
-若设置中选择连续截屏，则截取完开始以某一间隔进行连续识别；按结束则结束识别；按开始则开始识别\n\n\
-根据程序显示的图片效果，可以调整阈值和阈值化方式来使得图片中的文字更加容易被识别',
+截取屏幕上的某一区域，用鼠标划定区域，划定完按Enter\n\n\
+截取完会直接显示截图图片和文本\n\n\
+若想取消划定操作，按ESC键\n\n\
+截取一次后按连续，则开始以某一间隔在同一位置进行连续识别\n\n\
+按结束则结束识别\n\n\
+根据程序显示的图片效果，可以调整阈值和阈值化方式',
                                 pad=(10, 10),
                             ),
                         ],
@@ -750,10 +858,10 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
                         [
                             sg.Text(
                                 '\
-注意：有道调用的不是API，而是本地的有道词典程序\n\
-设置好有道词典路径后，点击启动有道，并切换到词典翻译页面，即可获取翻译文本（不可最小化）\n\
-有道词典的调用方式为复制文本到剪切板并复制到原文栏，并获取翻译栏的文本，所以速度会偏慢\n\
-若本程序获取的翻译文本错位，可尝试增加翻译间隔，或取消抓取翻译并将词典的翻译栏拖在游戏窗口下方\n\
+注意：有道调用的不是API，而是本地的有道词典程序（不可最小化）\n\
+设置好有道词典路径后，点击启动有道，并切换到词典翻译页面\n\
+若本程序获取的翻译文本错位，可尝试增加翻译间隔\n\
+可以取消抓取翻译，并将词典的翻译栏拖在游戏窗口下方\n\
 若有道词典的翻译有问题，可尝试终止有道后再启动有道',
                                 pad=(10, 10),
                             ),
@@ -810,7 +918,8 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
 设置好Yukari2路径后，点击启动Yukari2即可（可最小化）\n\n\
 阅读当前文本：读出当前抓取文本\n\n\
 连续阅读：连续阅读抓取文本，即抓取到新文本时读取新文本\n\n\
-阅读内容：勾上的内容会读取，反之忽略；判断依据，有「的为角色对话，反之为旁白',
+阅读内容：勾上的内容会读取，反之忽略\n\n\
+判断依据：有「的为角色对话，反之为旁白',
                                 pad=(10, 10),
                             ),
                         ],
@@ -824,6 +933,7 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
                 sg.TabGroup(
                     [
                         [
+                            sg.Tab('游戏', help_game),
                             sg.Tab('抓取', help_textractor),
                             sg.Tab('光学', help_OCR),
                             sg.Tab('翻译', help_translate),
@@ -841,6 +951,7 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
                 sg.TabGroup(
                     [
                         [
+                            sg.Tab('游\n戏', game_layout),
                             sg.Tab('抓\n取', textractor_layout),
                             sg.Tab('光\n学', OCR_layout),
                             sg.Tab('翻\n译', translate_layout),
@@ -885,7 +996,7 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
                 self.yukari2.set_character(self.config['yukari2_character'])
 
             with open('config.json', 'w') as f:
-                json.dump(self.config, f, indent=4)
+                json.dump(self.config, f, indent=4, ensure_ascii=False)
 
     # 读取设置
     def load_config(self):
@@ -898,15 +1009,14 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
     # 存储游戏信息
     def save_game(self):
         with open('game.json', 'w') as f:
-            json.dump(self.game, f, indent=4)
+            json.dump(self.game, f, indent=4, ensure_ascii=False)
 
     # 读取游戏信息
     def load_game(self):
         if os.path.exists('game.json'):
             with open('game.json', 'r') as f:
                 config = json.load(f)
-            for i in config:
-                self.game[i] = config[i]
+            self.game = config
 
     # 文字处理
     def text_process(self, text):
@@ -952,6 +1062,119 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
                 jbeijing_to[self.config['jbeijing_to']],
             )
 
+    # 游戏列表点击函数
+    def get_game_info(self):
+        game_selected = self.main_window['game_list'].get()
+        if len(game_selected):
+            game_list = self.game['game_list']
+            for i in game_list:
+                if i['name'] == game_selected[0]:
+                    self.main_window['game_name'].update(i['name'])
+                    self.main_window['game_path'].update(i['path'])
+                    self.main_window['game_hook_code'].update(i['hook_code'])
+                    self.main_window['game_start_mode'].update(value=i['start_mode'])
+                    break
+
+    # 添加按钮函数
+    def add_game(self):
+        game_name = self.main_window['game_name'].get()
+        game_path = self.main_window['game_path'].get()
+        game_hook_code = self.main_window['game_hook_code'].get()
+        game_start_mode = self.main_window['game_start_mode'].get()
+        if not game_name:
+            game_name = os.path.split(game_path)[1]
+            game_name = os.path.splitext(game_name)[0]
+
+        for i in self.game['game_list']:
+            if i['name'] == game_name or \
+               i['path'] == game_path:
+                index = self.games.index(i['name'])
+                self.games[index] = game_name
+                self.main_window['game_list'].update(values=self.games)
+
+                i['name'] = game_name
+                i['path'] = game_path
+                i['hook_code'] = game_hook_code
+                i['start_mode'] = game_start_mode
+                self.save_game()
+                return
+
+        game_info = {
+            'name': game_name,
+            'path': game_path,
+            'hook_code': game_hook_code,
+            'start_mode': game_start_mode,
+        }
+        self.game['game_list'].append(game_info)
+        self.games.append(game_name)
+        self.save_game()
+        self.main_window['game_list'].update(values=self.games)
+
+    # 删除按钮函数
+    def delete_game(self):
+        game_name = self.main_window['game_name'].get()
+        for i in self.game['game_list']:
+            if i['name'] == game_name:
+                self.game['game_list'].remove(i)
+                self.games.remove(game_name)
+                self.save_game()
+                self.main_window['game_list'].update(values=self.games)
+                break
+
+    # 启动游戏按钮函数
+    def start_game(self):
+        game_path = self.main_window['game_path'].get()
+        if not os.path.exists(game_path):
+            sg.Popup('提示', '游戏路径不正确')
+            return
+        self.textractor_start()
+
+        pid = None
+        name = os.path.split(game_path)[1]
+        mode = self.main_window['game_start_mode'].get()
+        if mode == '直接启动':
+            p = Popen(
+                game_path,
+                shell=False,
+            )
+            pid = p.pid
+        elif mode == 'Locale Emulator':
+            locale_emulator_path = self.config['locale_emulator_path']
+            leproc_path = os.path.join(locale_emulator_path, 'LEProc.exe')
+            if not os.path.exists(locale_emulator_path) or \
+               not os.path.exists(leproc_path):
+                sg.Popup('提示', 'Locale Emulator路径错误')
+                return
+            p = Popen(
+                r'"' + leproc_path + r'"' + r' -run ' + r'"' + game_path + r'"',
+                shell=True,
+            )
+            i = 0
+            while i < 10:
+                for proc in psutil.process_iter():
+                    try:
+                        process = proc.as_dict(attrs=['pid', 'name'])
+                        if process['name'] == name:
+                            pid = process['pid']
+                            i = 10
+                            break
+                    except:
+                        pass
+                sleep(1)
+
+        if not pid:
+            return
+
+        self.game['curr_game_id'] = pid
+        self.game['curr_game_name'] = name
+        self.main_window['process'].update(str(pid) + ' - ' + name)
+        self.attach(pid)
+
+        hook_code = self.main_window['game_hook_code'].get()
+        if hook_code:
+            sleep(1)
+            self.hook_code(pid, hook_code)
+
     # 刷新按钮函数
     def refresh_process_list(self):
         processes = []
@@ -962,12 +1185,12 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
                 if p['name'] not in process_ignore_list:
                     process = str(p['pid']) + ' - ' + str(p['name'])
 
-                    if p['pid'] == self.game['game_id'] and \
-                       p['name'] == self.game['game_name']:
+                    if p['pid'] == self.game['curr_game_id'] and \
+                       p['name'] == self.game['curr_game_name']:
                         game_process = process
 
                     processes.append(process)
-            except psutil.NoSuchProcess:
+            except:
                 pass
         self.main_window['process'].update(values=processes)
 
@@ -983,13 +1206,14 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
         if not os.path.exists(TextractorCLI_path) or \
            not os.path.exists(texthook_path):
             sg.Popup('提示', 'Textractor路径不正确')
-        else:
-            self.refresh_process_list()
+            return
 
-            self.textractor_working = True
-            self.textractor_thread = Loop_Thread(target=self.textractor_work)
-            self.textractor_thread.daemon = True
-            self.textractor_thread.start()
+        self.refresh_process_list()
+
+        self.textractor_working = True
+        self.textractor_thread = Loop_Thread(target=self.textractor_work)
+        self.textractor_thread.daemon = True
+        self.textractor_thread.start()
 
     # 终止按钮函数
     def textractor_stop(self):
@@ -1063,71 +1287,81 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
 
             sleep(self.config['textractor_interval'])
 
+    def attach(self, pid):
+        if self.cli:
+            self.cli.stdin.write('attach -P' + str(pid) + '\n')
+            self.cli.stdin.flush()
+
     # Attach按钮函数
     def textractor_attach(self):
         if not self.cli:
             sg.Popup('提示', 'Textractor未启动')
-        else:
-            pid = self.main_window['process'].get().split()
-            if not len(pid):
-                sg.Popup('提示', '进程栏缺少进程id')
-            else:
-                pid = int(pid[0])
-                p = psutil.Process(pid)
-                self.game['game_id'] = pid
-                self.game['game_name'] = p.name()
-                self.save_game()
+            return
 
-                self.cli.stdin.write('attach -P' + str(pid) + '\n')
-                self.cli.stdin.flush()
+        pid = self.main_window['process'].get().split()
+        if not len(pid):
+            sg.Popup('提示', '进程栏缺少进程id')
+            return
+
+        pid = int(pid[0])
+        p = psutil.Process(pid)
+        self.game['curr_game_id'] = pid
+        self.game['curr_game_name'] = p.name()
+        self.save_game()
+        self.attach(pid)
+
+    def hook_code(self, pid, hook_code):
+        if self.cli:
+            self.cli.stdin.write(hook_code + ' -P' + str(pid) + '\n')
+            self.cli.stdin.flush()
 
     # 特殊码按钮函数
     def textractor_hook_code(self):
         if not self.cli:
             sg.Popup('提示', 'Textractor未启动')
-        else:
-            layout = [
-                [
-                    sg.Column(
+            return
+
+        layout = [
+            [
+                sg.Column(
+                    [
                         [
-                            [
-                                sg.Text('特殊码:'),
-                                sg.Input(
-                                    key='hook_code',
-                                    size=(20, 1),
-                                ),
-                            ],
-                            [
-                                sg.Button('使用')
-                            ],
+                            sg.Text('特殊码:'),
+                            sg.Input(
+                                key='hook_code',
+                                size=(20, 1),
+                            ),
                         ],
-                        element_justification='center'
-                    )
-                ]
+                        [
+                            sg.Button('使用')
+                        ],
+                    ],
+                    element_justification='center'
+                )
             ]
+        ]
 
-            window = sg.Window(
-                '特殊码',
-                layout,
-                alpha_channel=self.config['alpha'],
-            )
+        window = sg.Window(
+            '特殊码',
+            layout,
+            alpha_channel=self.config['alpha'],
+        )
 
-            rule = re.compile(r'^\/.+@.+$')
-            while True:
-                event, values = window.read()
-                if event is None:
+        rule = re.compile(r'^\/.+@.+$')
+        while True:
+            event, values = window.read()
+            if event is None:
+                break
+            elif event == '使用':
+                hook_code = window['hook_code'].get()
+                if not rule.match(hook_code):
+                    sg.Popup('提示', '特殊码格式不对')
+                else:
+                    self.hook_code(self.game['curr_game_id'], hook_code)
+                    sg.Popup('提示', '特殊码使用成功')
                     break
-                elif event == '使用':
-                    hook_code = window['hook_code'].get()
-                    if not rule.match(hook_code):
-                        sg.Popup('提示', '特殊码格式不对')
-                    else:
-                        self.cli.stdin.write(hook_code + ' -P' + str(self.game['game_id']) + '\n')
-                        self.cli.stdin.flush()
-                        sg.Popup('提示', '特殊码使用成功')
-                        break
 
-            window.close()
+        window.close()
 
     # 截取按钮函数
     def get_area(self):
@@ -1186,7 +1420,7 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
                     self.x1, self.x2 = self.x2, self.x1
                 if self.y1 > self.y2:
                     self.y1, self.y2 = self.y2, self.y1
-                self.OCR_start()
+                self.OCR_work()
             elif event == 'Escape:27':
                 screenshot_window.close()
 
@@ -1201,24 +1435,25 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
 
         self.main_window.UnHide()
 
-    # 开始按钮函数
+    # 连续按钮函数
     def OCR_start(self):
         if not os.path.exists(os.path.join(os.path.abspath('.'), 'Tesseract-OCR')):
             sg.Popup('提示', '目录下缺少Tesseract-OCR')
-        else:
-            if self.config['OCR_continuously']:
-                self.OCR_working = True
-                self.OCR_thread = Loop_Thread(target=self.OCR_work)
-                self.OCR_thread.daemon = True
-                self.OCR_thread.start()
-            else:
-                self.OCR_work()
+            return
+
+        self.OCR_working = True
+        self.OCR_thread = Loop_Thread(target=self.OCR_work)
+        self.OCR_thread.daemon = True
+        self.OCR_thread.start()
 
     # 结束按钮函数
     def OCR_stop(self):
         self.OCR_working = False
-        if self.config['OCR_continuously']:
+        try:
             self.OCR_thread.stop()
+        except:
+            pass
+        self.OCR_thread = None
 
     # 图片处理
     def image_process(self):
@@ -1258,7 +1493,7 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
                 if self.baidu and self.baidu.enabled:
                     self.main_window['text_OCR'].update('百度:\n' + self.text_baidu_translate + '\n\n', append=True)
 
-        if self.config['OCR_continuously']:
+        if self.OCR_working:
             sleep(self.config['OCR_interval'])
 
     # 浮动按键函数
