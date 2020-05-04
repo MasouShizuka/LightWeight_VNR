@@ -647,10 +647,18 @@ class Main_Window(object):
                             ),
                             sg.Text('秒'),
                         ],
+                        [
+                            sg.Text('原文：'),
+                            sg.Checkbox(
+                                '显示',
+                                key='text_origin',
+                                default=self.config['text_origin'],
+                            )
+                        ],
                     ],
                     pad=(10, 10),
                 )
-            ]
+            ],
         ]
 
         config_layout = [
@@ -1257,7 +1265,7 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
     def float_window(self):
         self.float = True
 
-        text = [
+        text_origin = [
             sg.Text('原文'),
             sg.Frame(
                 '',
@@ -1289,9 +1297,10 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
             ),
         ]
 
-        layout = [
-            text,
-        ]
+        layout = []
+
+        if self.config['text_origin']:
+            layout.append(text_origin)
 
         if self.config['jbeijing']:
             layout.append(text_jbeijing)
@@ -1327,7 +1336,8 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
             if event is None:
                 break
             if self.textractor_working or self.OCR_working:
-                if prev_text != self.text:
+                if self.config['text_origin'] and \
+                   prev_text != self.text:
                     prev_text = self.text
                     window['text'].update(self.text)
                 if self.config['jbeijing'] and \

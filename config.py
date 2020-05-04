@@ -40,4 +40,5 @@ config = {
 
     # 浮动窗口相关
     'float_interval': 0.1,
+    'text_origin': True,
 }
