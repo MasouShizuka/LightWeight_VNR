@@ -4,7 +4,7 @@ import re
 import json
 import psutil
 from config import config
-from game import game, start_mode
+from game import game, start_mode, start_directly, start_with_locale_emulator
 from loop_thread import Loop_Thread, Thread
 from process_ignore import process_ignore_list
 from time import sleep
@@ -82,7 +82,7 @@ class Main_Window(object):
             if event is None:
                 break
 
-            #游戏界面
+            # 游戏界面
             elif event == 'game_list':
                 self.get_game_info()
             elif event == '添加':
@@ -785,7 +785,7 @@ class Main_Window(object):
 修改游戏信息后按添加即可修改信息\n\n\
 转区运行需在设置中设置Locale Emulator路径\n\n\
 选择一项游戏后按删除即可删除\n\n\
-选择一项游戏后按启动游戏即可启动游戏，并启动Textractor注入dll',
+选择一项游戏后按启动游戏即可启动游戏，并自动启动Textractor注入dll',
                                 pad=(10, 10),
                             ),
                         ],
@@ -803,7 +803,7 @@ class Main_Window(object):
                             sg.Text(
                                 '\
 设置Textractor目录，确保目录下有TextractorCLI.exe和texthook.dll\n\n\
-点击启动TR，选择游戏线程，再Attach注入dll，之后选择钩子并固定即可\n\n\
+点击启动TR，选择游戏进程，再Attach注入dll，之后选择钩子并固定即可\n\n\
 dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，无需再Attach\n\n\
 特殊码使用之前必须确保dll已注入，且特殊码格式必须正确\n\n\
 若文本抓取出现问题，可尝试终止TR后再启动TR',
@@ -827,7 +827,7 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
 截取完会直接显示截图图片和文本\n\n\
 若想取消划定操作，按ESC键\n\n\
 截取一次后按连续，则开始以某一间隔在同一位置进行连续识别\n\n\
-按结束则结束识别\n\n\
+按结束则结束连续识别\n\n\
 根据程序显示的图片效果，可以调整阈值和阈值化方式',
                                 pad=(10, 10),
                             ),
@@ -876,10 +876,11 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
                         [
                             sg.Text(
                                 '\
-注意：百度翻译API是在线翻译，需要使用百度账号免费申请api\n\
+注意：百度翻译是在线翻译，需要使用百度账号免费申请api\n\
 1.https://api.fanyi.baidu.com/ 进入百度翻译开放平台。\n\
 2.按照指引完成api开通，只需要申请“通用翻译API”。\n\
-3.完成申请后点击顶部"管理控制台"，在申请信息一栏可获取APP ID与密钥。',
+3.完成申请后点击顶部"管理控制台"，在申请信息一栏可获取APP ID与密钥。”。\n\
+启动百度翻译前需要填写APP ID与密钥并且保存',
                                 pad=(10, 10),
                             ),
                         ],
@@ -1003,8 +1004,7 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
         if os.path.exists('config.json'):
             with open('config.json', 'r') as f:
                 config = json.load(f)
-            for i in config:
-                self.config[i] = config[i]
+            self.config = config
 
     # 存储游戏信息
     def save_game(self):
@@ -1097,6 +1097,7 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
                 i['hook_code'] = game_hook_code
                 i['start_mode'] = game_start_mode
                 self.save_game()
+
                 return
 
         game_info = {
@@ -1127,17 +1128,13 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
         if not os.path.exists(game_path):
             sg.Popup('提示', '游戏路径不正确')
             return
-        self.textractor_start()
 
         pid = None
         name = os.path.split(game_path)[1]
         mode = self.main_window['game_start_mode'].get()
+
         if mode == '直接启动':
-            p = Popen(
-                game_path,
-                shell=False,
-            )
-            pid = p.pid
+            pid = start_directly(game_path)
         elif mode == 'Locale Emulator':
             locale_emulator_path = self.config['locale_emulator_path']
             leproc_path = os.path.join(locale_emulator_path, 'LEProc.exe')
@@ -1145,29 +1142,19 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
                not os.path.exists(leproc_path):
                 sg.Popup('提示', 'Locale Emulator路径错误')
                 return
-            p = Popen(
-                r'"' + leproc_path + r'"' + r' -run ' + r'"' + game_path + r'"',
-                shell=True,
-            )
-            i = 0
-            while i < 10:
-                for proc in psutil.process_iter():
-                    try:
-                        process = proc.as_dict(attrs=['pid', 'name'])
-                        if process['name'] == name:
-                            pid = process['pid']
-                            i = 10
-                            break
-                    except:
-                        pass
-                sleep(1)
+
+            pid = start_with_locale_emulator(leproc_path, game_path, name)
 
         if not pid:
             return
 
+        self.textractor_start()
+
         self.game['curr_game_id'] = pid
         self.game['curr_game_name'] = name
         self.main_window['process'].update(str(pid) + ' - ' + name)
+
+        sleep(1)
         self.attach(pid)
 
         hook_code = self.main_window['game_hook_code'].get()
@@ -1500,51 +1487,60 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
     def float_window(self):
         self.float = True
 
-        text_origin = [
-            sg.Text('原文'),
-            sg.Frame(
-                '',
-                [[sg.Multiline('', key='text', size=(75, 2))]],
-            ),
-        ]
-
-        text_jbeijing = [
-            sg.Text('北京'),
-            sg.Frame(
-                '',
-                [[sg.Multiline('', key='text_jbeijing_translated', size=(75, 2))]],
-            ),
-        ]
-
-        text_youdao = [
-            sg.Text('有道'),
-            sg.Frame(
-                '',
-                [[sg.Multiline('', key='text_youdao_translated', size=(75, 2))]],
-            ),
-        ]
-
-        text_baidu = [
-            sg.Text('百度'),
-            sg.Frame(
-                '',
-                [[sg.Multiline('', key='text_baidu_translated', size=(75, 2))]],
-            ),
-        ]
-
-        layout = []
+        text_layout = []
 
         if self.config['text_origin']:
-            layout.append(text_origin)
+            text_origin = [
+                sg.Text('原文'),
+                sg.Frame(
+                    '',
+                    [[sg.Multiline('', key='text', size=(75, 2))]],
+                ),
+            ]
+            text_layout.append(text_origin)
 
         if self.config['jbeijing']:
-            layout.append(text_jbeijing)
+            text_jbeijing = [
+                sg.Text('北京'),
+                sg.Frame(
+                    '',
+                    [[sg.Multiline('', key='text_jbeijing_translated', size=(75, 2))]],
+                ),
+            ]
+            text_layout.append(text_jbeijing)
 
         if self.youdao and self.youdao.get_translate:
-            layout.append(text_youdao)
+            text_youdao = [
+                sg.Text('有道'),
+                sg.Frame(
+                    '',
+                    [[sg.Multiline('', key='text_youdao_translated', size=(75, 2))]],
+                ),
+            ]
+            text_layout.append(text_youdao)
 
         if self.baidu and self.baidu.enabled:
-            layout.append(text_baidu)
+            text_baidu = [
+                sg.Text('百度'),
+                sg.Frame(
+                    '',
+                    [[sg.Multiline('', key='text_baidu_translated', size=(75, 2))]],
+                ),
+            ]
+            text_layout.append(text_baidu)
+
+        layout = [
+            [
+                sg.Column(
+                    [
+                        [
+                            sg.Column(text_layout),
+                            sg.Button('暂停', pad=(20, 0)),
+                        ],
+                    ],
+                ),
+            ],
+        ]
 
         window = sg.Window(
             '',
@@ -1570,6 +1566,9 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
             event, values = window.read(timeout=self.config['float_interval'] * 1000)
             if event is None:
                 break
+            elif event == '暂停':
+                self.textractor_pause = not self.textractor_pause
+
             if self.textractor_working or self.OCR_working:
                 if self.config['text_origin'] and \
                    prev_text != self.text:
@@ -1589,7 +1588,6 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
                    prev_text_baidu != self.text_baidu_translate:
                     prev_text_baidu = self.text_baidu_translate
                     window['text_baidu_translated'].update(self.text_baidu_translate)
-
 
         self.float = False
         window.close()
