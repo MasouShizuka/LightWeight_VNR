@@ -693,6 +693,12 @@ class Main_Window(object):
                                 default_text=self.config['deduplication'],
                                 size=(16, 1),
                             ),
+                            sg.Text('    智能去重：'),
+                            sg.Checkbox(
+                                '启用',
+                                key='deduplication_auto',
+                                default=self.config['deduplication_auto'],
+                            )
                         ],
                         [
                             sg.Text('垃圾字符表：'),
@@ -782,8 +788,8 @@ class Main_Window(object):
                                 '\
 填好游戏名称、程序目录、启动方式、特殊码（没有可不填）后添加即可\n\n\
 程序目录、启动方式必须填，游戏名称若为空，添加时将程序名作为游戏名称\n\n\
-修改游戏信息后按添加即可修改信息\n\n\
 转区运行需在设置中设置Locale Emulator路径\n\n\
+修改游戏信息后按添加即可修改信息\n\n\
 选择一项游戏后按删除即可删除\n\n\
 选择一项游戏后按启动游戏即可启动游戏，并自动启动Textractor注入dll',
                                 pad=(10, 10),
@@ -898,6 +904,7 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
                             sg.Text(
                                 '\
 文本去重数：文本重复的次数，比如"aabbcc"为重复2次\n\n\
+智能去重：根据句子自动判断重复次数并去重，勾上后文本去重数失效\n\n\
 垃圾字符表：去除文本中含的垃圾字符，垃圾字符以空格分隔\n\n\
 正则表达式：将正则表达式中的所有()部分连接，剩下的去除',
                                 pad=(10, 10),
@@ -1020,7 +1027,20 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
 
     # 文字处理
     def text_process(self, text):
-        text = text[::int(self.config['deduplication'])]
+        if self.config['deduplication_auto']:
+            i = 1
+            while i < len(text):
+                if text[i] == text[0]:
+                    i += 1
+                else:
+                    break
+            if i > 1:
+                text_one = text[::i]
+                text_two = text[1::i]
+                if text_one == text_two:
+                    text = text_one
+        else:
+            text = text[::int(self.config['deduplication'])]
 
         for i in re.split(r'\s+', self.config['garbage_chars']):
             text = text.replace(i, '')

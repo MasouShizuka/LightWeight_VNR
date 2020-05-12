@@ -37,6 +37,7 @@ config = {
 
     # 文本相关
     'deduplication': 1,
+    'deduplication_auto': False,
     'garbage_chars': '',
     're': r'.*',
 
