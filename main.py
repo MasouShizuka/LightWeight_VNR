@@ -117,18 +117,7 @@ class Main_Window(object):
 
             # 翻译界面
             elif event == '启动有道':
-                youdaodict_path = os.path.join(self.config['youdao_path'], 'YoudaoDict.exe')
-                if not os.path.exists(self.config['youdao_path']) or \
-                   not os.path.exists(youdaodict_path):
-                    sg.Popup('提示', '有道词典路径不正确')
-                else:
-                    from Translator.youdao import Youdao
-                    self.youdao = Youdao(
-                        path=self.config['youdao_path'],
-                        interval=self.config['youdao_interval'],
-                        get_translate=self.config['youdao_get_translate'],
-                    )
-                    self.youdao.start()
+                self.youdao_start()
             elif event == '终止有道':
                 if self.youdao:
                     self.youdao.stop()
@@ -136,25 +125,11 @@ class Main_Window(object):
 
             # 语音界面
             elif event == '启动Yukari2':
-                yukari2_path = os.path.join(self.config['yukari2_path'], 'VOICEROID.exe')
-                if not os.path.exists(self.config['yukari2_path']) or \
-                   not os.path.exists(yukari2_path):
-                    sg.Popup('提示', 'Yukari2路径不正确')
-                else:
-                    from TTS.yukari2 import Yukari2
-                    self.yukari2 = Yukari2(
-                        path=self.config['yukari2_path'],
-                        constantly=self.config['yukari2_constantly'],
-                        aside=self.config['yukari2_aside'],
-                        character=self.config['yukari2_character'],
-                    )
-                    self.yukari2.start()
+                self.yukari2_start()
             elif event == '终止Yukari2':
                 if self.yukari2:
                     self.yukari2.stop()
                     self.yukari2 = None
-            elif event == '阅读当前文本':
-                self.yukari2.read(self.text)
 
             # 设置界面
             elif event.startswith('保存'):
@@ -464,7 +439,6 @@ class Main_Window(object):
                             sg.Text('Yukari2：   '),
                             sg.Button('启动Yukari2', pad=(20, 0)),
                             sg.Button('终止Yukari2', pad=(20, 0)),
-                            sg.Button('阅读当前文本', pad=(20, 0)),
                         ],
                         [
                             sg.Text('Yukari2路径：'),
@@ -924,7 +898,6 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
                             sg.Text(
                                 '\
 设置好Yukari2路径后，点击启动Yukari2即可（可最小化）\n\n\
-阅读当前文本：读出当前抓取文本\n\n\
 连续阅读：连续阅读抓取文本，即抓取到新文本时读取新文本\n\n\
 阅读内容：勾上的内容会读取，反之忽略\n\n\
 判断依据：有「的为角色对话，反之为旁白',
@@ -1025,6 +998,20 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
                 config = json.load(f)
             self.game = config
 
+    # 翻译线程，以便同时翻译
+    def jbeijing_thread(self, text):
+        self.text_jbeijing_translate = jbeijing(
+            text,
+            self.config['jbeijing_path'],
+            jbeijing_to[self.config['jbeijing_to']],
+        )
+
+    def youdao_thread(self, text, pid):
+        self.text_youdao_translate = self.youdao.translate(text, pid=pid)
+
+    def baidu_thread(self, text):
+        self.text_baidu_translate = self.baidu.translate(text)
+
     # 文字处理
     def text_process(self, text):
         if self.config['deduplication_auto']:
@@ -1067,20 +1054,18 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
         if self.yukari2 and self.yukari2.working:
             yukari2_thread = Thread(target=self.yukari2.read_text, args=(self.text, pid))
             yukari2_thread.start()
-            # self.yukari2.read_text(self.text, pid=pid)
 
         if self.youdao and self.youdao.working:
-            self.text_youdao_translate = self.youdao.translate(text, pid=pid)
+            youdao_thread = Thread(target=self.youdao_thread, args=(text, pid))
+            youdao_thread.start()
 
         if self.baidu and self.baidu.enabled:
-            self.text_baidu_translate = self.baidu.translate(text)
+            baidu_thread = Thread(target=self.baidu_thread, args=(text,))
+            baidu_thread.start()
 
         if self.config['jbeijing']:
-            self.text_jbeijing_translate = jbeijing(
-                text,
-                self.config['jbeijing_path'],
-                jbeijing_to[self.config['jbeijing_to']],
-            )
+            jbeijing_thread = Thread(target=self.jbeijing_thread, args=(text,))
+            jbeijing_thread.start()
 
     # 游戏列表点击函数
     def get_game_info(self):
@@ -1172,6 +1157,7 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
 
         self.game['curr_game_id'] = pid
         self.game['curr_game_name'] = name
+        self.save_game()
         self.main_window['process'].update(str(pid) + ' - ' + name)
 
         sleep(1)
@@ -1378,15 +1364,17 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
         im.save('Screenshot.png')
         full_size = size()
         screenshot_layout = [
-            [sg.Graph(
-                key='graph',
-                canvas_size=full_size,
-                graph_bottom_left=(0, 0),
-                graph_top_right=full_size,
-                drag_submits=True,
-                enable_events=True,
-                tooltip='按住左键划定区域\n按ESC退出',
-            )],
+            [
+                sg.Graph(
+                    key='graph',
+                    canvas_size=full_size,
+                    graph_bottom_left=(0, 0),
+                    graph_top_right=full_size,
+                    drag_submits=True,
+                    enable_events=True,
+                    tooltip='按住左键划定区域\n按ESC退出',
+                ),
+            ],
         ]
         screenshot_window = sg.Window(
             '',
@@ -1503,6 +1491,37 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
         if self.OCR_working:
             sleep(self.config['OCR_interval'])
 
+    # 有道启动按钮函数
+    def youdao_start(self):
+        youdaodict_path = os.path.join(self.config['youdao_path'], 'YoudaoDict.exe')
+        if not os.path.exists(self.config['youdao_path']) or \
+           not os.path.exists(youdaodict_path):
+            sg.Popup('提示', '有道词典路径不正确')
+        else:
+            from Translator.youdao import Youdao
+            self.youdao = Youdao(
+                path=self.config['youdao_path'],
+                interval=self.config['youdao_interval'],
+                get_translate=self.config['youdao_get_translate'],
+            )
+            self.youdao.start()
+
+    # yukari2启动按钮函数
+    def yukari2_start(self):
+        yukari2_path = os.path.join(self.config['yukari2_path'], 'VOICEROID.exe')
+        if not os.path.exists(self.config['yukari2_path']) or \
+           not os.path.exists(yukari2_path):
+            sg.Popup('提示', 'Yukari2路径不正确')
+        else:
+            from TTS.yukari2 import Yukari2
+            self.yukari2 = Yukari2(
+                path=self.config['yukari2_path'],
+                constantly=self.config['yukari2_constantly'],
+                aside=self.config['yukari2_aside'],
+                character=self.config['yukari2_character'],
+            )
+            self.yukari2.start()
+
     # 浮动按键函数
     def float_window(self):
         self.float = True
@@ -1556,6 +1575,7 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
                         [
                             sg.Column(text_layout),
                             sg.Button('暂停', pad=(20, 0)),
+                            sg.Button('阅读', pad=(0, 0)),
                         ],
                     ],
                 ),
@@ -1588,6 +1608,11 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
                 break
             elif event == '暂停':
                 self.textractor_pause = not self.textractor_pause
+            elif event == '阅读':
+                if not self.yukari2:
+                    self.yukari2_start()
+                else:
+                    self.yukari2.read(self.text)
 
             if self.textractor_working or self.OCR_working:
                 if self.config['text_origin'] and \

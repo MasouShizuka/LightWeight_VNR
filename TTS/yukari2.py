@@ -122,26 +122,23 @@ class Yukari2(object):
             if not self.win:
                 self.win = self.app.top_window()
             if not self.edit:
-                self.edit = self.win.Edit
-            # if not self.play_button:
-            #     self.play_button = self.win.Button6
-            # if not self.stop_button:
-            #     self.stop_button = self.win.Button7
-            # self.stop_button.click()
-            # self.edit.set_text(text)
-            # self.play_button.click()
-            self.win.menu_select("文本->停止")
+                self.edit = self.win.custom.children()[0]
+            if not self.play_button:
+                self.play_button = self.win.custom.children()[1]
+            if not self.stop_button:
+                self.stop_button = self.win.custom.children()[2]
+            self.stop_button.click()
             self.edit.set_text(text)
-            self.win.menu_select("文本->播放")
+            self.play_button.click()
         except:
             pass
 
     def read_text(self, text, pid=None):
         if (self.aside and '「' not in text) or \
            (self.character and '「' in text):
-            lock.acquire()
+            # lock.acquire()
             self.read(text)
-            lock.release()
+            # lock.release()
 
             if pid:
                 set_focus(pid)

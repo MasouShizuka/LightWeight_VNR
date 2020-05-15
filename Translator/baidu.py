@@ -8,19 +8,13 @@ class Baidu(object):
     def __init__(self, **kw):
         self.appid = kw['appid']
         self.key = kw['key']
-        self.enabled = False
+        self.enabled = kw['enable']
 
     def set_appid(self, appid):
         self.appid = str(appid)
 
     def set_key(self, key):
         self.key = str(key)
-
-    def enable(self):
-        self.enabled = True
-
-    def disable(self):
-        self.enabled = False
 
     def errorhandel(self, code):
         MAPPING = {
