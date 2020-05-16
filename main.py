@@ -5,7 +5,7 @@ import json
 import psutil
 from config import config
 from game import game, start_mode, start_directly, start_with_locale_emulator
-from loop_thread import Loop_Thread, Thread
+from threading import Thread
 from process_ignore import process_ignore_list
 from time import sleep
 from subprocess import Popen, PIPE
@@ -37,14 +37,12 @@ class Main_Window(object):
         self.games = [i['name'] for i in self.game['game_list']]
 
         # Textractor相关变量
-        self.textractor_thread = None
         self.textractor_working = False
         self.textractor_pause = False
         self.cli = None
         self.fixed_hook = None
         # OCR相关变量
         self.screenshot = None
-        self.OCR_thread = None
         self.OCR_working = False
         self.x1 = 0
         self.y1 = 0
@@ -901,7 +899,7 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
 设置好Yukari2路径后，点击启动Yukari2即可（可最小化）\n\n\
 连续阅读：连续阅读抓取文本，即抓取到新文本时读取新文本\n\n\
 阅读内容：勾上的内容会读取，反之忽略\n\n\
-判断依据：有「的为角色对话，反之为旁白',
+判断依据：有「、『、（的为角色对话，反之为旁白',
                                 pad=(10, 10),
                             ),
                         ],
@@ -1205,9 +1203,9 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
         self.refresh_process_list()
 
         self.textractor_working = True
-        self.textractor_thread = Loop_Thread(target=self.textractor_work)
-        self.textractor_thread.daemon = True
-        self.textractor_thread.start()
+        textractor_thread = Thread(target=self.textractor_work)
+        textractor_thread.daemon = True
+        textractor_thread.start()
 
     # 终止按钮函数
     def textractor_stop(self):
@@ -1218,11 +1216,9 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
         self.textractor_working = False
         try:
             self.cli.kill()
-            self.textractor_thread.stop()
         except:
             pass
         self.cli = None
-        self.textractor_thread = None
 
     # 以一定间隔读取cli.exe的输出
     def textractor_work(self):
@@ -1429,26 +1425,6 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
 
         self.main_window.UnHide()
 
-    # 连续按钮函数
-    def OCR_start(self):
-        if not os.path.exists(os.path.join(os.path.abspath('.'), 'Tesseract-OCR')):
-            sg.Popup('提示', '目录下缺少Tesseract-OCR')
-            return
-
-        self.OCR_working = True
-        self.OCR_thread = Loop_Thread(target=self.OCR_work)
-        self.OCR_thread.daemon = True
-        self.OCR_thread.start()
-
-    # 结束按钮函数
-    def OCR_stop(self):
-        self.OCR_working = False
-        try:
-            self.OCR_thread.stop()
-        except:
-            pass
-        self.OCR_thread = None
-
     # 图片处理
     def image_process(self):
         im = Image.open("Area.png")
@@ -1487,8 +1463,26 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
                 if self.baidu and self.baidu.enabled:
                     self.main_window['text_OCR'].update('百度:\n' + self.text_baidu_translate + '\n\n', append=True)
 
-        if self.OCR_working:
+    # OCR连续识别线程
+    def OCR_thread(self):
+        while self.OCR_working:
+            self.OCR_work()
             sleep(self.config['OCR_interval'])
+
+    # 连续按钮函数
+    def OCR_start(self):
+        if not os.path.exists(os.path.join(os.path.abspath('.'), 'Tesseract-OCR')):
+            sg.Popup('提示', '目录下缺少Tesseract-OCR')
+            return
+
+        self.OCR_working = True
+        OCR_thread = Thread(target=self.OCR_thread)
+        OCR_thread.daemon = True
+        OCR_thread.start()
+
+    # 结束按钮函数
+    def OCR_stop(self):
+        self.OCR_working = False
 
     # 有道启动按钮函数
     def youdao_start(self):

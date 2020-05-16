@@ -3,7 +3,7 @@ sys.path.append("..")
 import os
 from time import sleep
 from pywinauto.application import Application
-from set_game_focus import set_focus
+from set_focus import set_focus
 from pyperclip import copy
 
 

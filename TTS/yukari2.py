@@ -2,7 +2,7 @@ import sys
 sys.path.append("..")
 import os
 from pywinauto.application import Application
-from set_game_focus import set_focus
+from set_focus import set_focus
 # from pyperclip import copy
 
 
@@ -133,9 +133,16 @@ class Yukari2(object):
             pass
 
     def read_text(self, text, pid=None):
-        if (self.aside and '「' not in text) or \
-           (self.character and '「' in text):
-            self.read(text)
-
-            if pid:
-                set_focus(pid)
+        if '「' in text or \
+           '『' in text or \
+           '（' in text or \
+           '(' in text:
+            if self.character:
+                self.read(text)
+                if pid:
+                    set_focus(pid)
+        else:
+            if self.aside:
+                self.read(text)
+                if pid:
+                    set_focus(pid)
