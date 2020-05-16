@@ -1,6 +1,7 @@
 import win32gui
 import win32process
 
+
 def get_hwnds_for_pid(pid):
     def callback(hwnd, hwnds):
         if win32gui.IsWindowVisible(hwnd) and win32gui.IsWindowEnabled(hwnd):

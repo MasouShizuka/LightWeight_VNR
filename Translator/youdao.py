@@ -6,6 +6,7 @@ from pywinauto.application import Application
 from set_game_focus import set_focus
 from pyperclip import copy
 
+
 class Youdao(object):
     def __init__(self, **kw):
         self.path = kw['path']

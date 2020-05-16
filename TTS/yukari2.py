@@ -2,11 +2,9 @@ import sys
 sys.path.append("..")
 import os
 from pywinauto.application import Application
-from threading import Lock
 from set_game_focus import set_focus
 # from pyperclip import copy
 
-lock = Lock()
 
 # class Yukari(object):
 #     def __init__(self, **kw):
@@ -127,6 +125,7 @@ class Yukari2(object):
                 self.play_button = self.win.custom.children()[1]
             if not self.stop_button:
                 self.stop_button = self.win.custom.children()[2]
+                
             self.stop_button.click()
             self.edit.set_text(text)
             self.play_button.click()
@@ -136,9 +135,7 @@ class Yukari2(object):
     def read_text(self, text, pid=None):
         if (self.aside and '「' not in text) or \
            (self.character and '「' in text):
-            # lock.acquire()
             self.read(text)
-            # lock.release()
 
             if pid:
                 set_focus(pid)

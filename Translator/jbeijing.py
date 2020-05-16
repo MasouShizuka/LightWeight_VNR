@@ -13,6 +13,7 @@ jbeijing_to = {
 }
 jbeijing_translate = [i for i in jbeijing_to]
 
+
 # 借鉴了VNR中调用Jbeijing的方法
 def jbeijing(text, dll_path, to):
     dll = os.path.join(dll_path, DLL)

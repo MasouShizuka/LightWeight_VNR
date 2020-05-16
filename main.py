@@ -20,6 +20,7 @@ from Translator.baidu import Baidu
 sg.theme('DarkGrey5')
 sg.set_options(font=('Microsoft YaHei Mono', 15))
 
+
 class Main_Window(object):
     def __init__(self):
         super().__init__()
@@ -1281,9 +1282,8 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
             sleep(self.config['textractor_interval'])
 
     def attach(self, pid):
-        if self.cli:
-            self.cli.stdin.write('attach -P' + str(pid) + '\n')
-            self.cli.stdin.flush()
+        self.cli.stdin.write('attach -P' + str(pid) + '\n')
+        self.cli.stdin.flush()
 
     # Attach按钮函数
     def textractor_attach(self):
@@ -1304,9 +1304,8 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
         self.attach(pid)
 
     def hook_code(self, pid, hook_code):
-        if self.cli:
-            self.cli.stdin.write(hook_code + ' -P' + str(pid) + '\n')
-            self.cli.stdin.flush()
+        self.cli.stdin.write(hook_code + ' -P' + str(pid) + '\n')
+        self.cli.stdin.flush()
 
     # 特殊码按钮函数
     def textractor_hook_code(self):
@@ -1396,7 +1395,7 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
             event, values = screenshot_window.read(timeout=10)
             if event is None:
                 break
-            if event == 'graph':
+            elif event == 'graph':
                 if not draging:
                     self.x1, self.y1 = position()
                 draging = True

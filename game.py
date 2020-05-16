@@ -13,6 +13,7 @@ start_mode = [
     'Locale Emulator',
 ]
 
+
 def start_directly(game_path):
     try:
         p = Popen(

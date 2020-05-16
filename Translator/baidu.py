@@ -4,6 +4,7 @@ import urllib
 import random
 import json
 
+
 class Baidu(object):
     def __init__(self, **kw):
         self.appid = kw['appid']

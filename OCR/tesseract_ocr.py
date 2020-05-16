@@ -17,6 +17,7 @@ languages = {
 }
 lang_translate = [i for i in languages]
 
+
 def tesseract_OCR(im, language):
     text_extract = pytesseract.image_to_string(
         im,

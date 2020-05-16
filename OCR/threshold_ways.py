@@ -14,6 +14,7 @@ def THRESH_TOZERO_INV(im, threshold):
     img = im.point(lambda x: 0 if x > threshold else x, '1')
     return img
 
+
 threshold_ways = {
     'BINARY': THRESH_BINARY,
     'BINARY_INV': THRESH_BINARY_INV,
