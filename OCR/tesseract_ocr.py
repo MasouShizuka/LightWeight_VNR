@@ -10,9 +10,13 @@ lang_translate = [i for i in languages]
 
 
 def tesseract_OCR(im, language):
-    text_extract = pytesseract.image_to_string(
-        im,
-        lang=language,
-        config='--psm 6',
-    )
+    text_extract = ""
+    try:
+        text_extract = pytesseract.image_to_string(
+            im,
+            lang=language,
+            config='--psm 6',
+        )
+    except:
+        pass
     return text_extract

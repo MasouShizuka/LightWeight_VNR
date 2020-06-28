@@ -42,6 +42,8 @@ class Main_Window(object):
         self.cli = None
         self.fixed_hook = None
         # OCR相关变量
+        pytesseract.pytesseract.tesseract_cmd = os.path.join(self.config['tesseract_OCR_path'], 'tesseract.exe')
+        tessdata_dir_config = '--tessdata-dir "' + os.path.join(self.config['tesseract_OCR_path'], 'tessdata') + '"'
         self.screenshot = None
         self.OCR_working = False
         self.x1 = 0
