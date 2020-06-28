@@ -30,6 +30,9 @@
 - 若文本抓取出现问题，可尝试`终止TR`后再`启动TR`
 
 ### OCR
+- 设置`Tesseract-OCR路径`
+    - 确保目录下有`tessdata`、`libgcc_s_seh-1.dll.`、`libgif-7.dll`、`libgomp-1.dll`、`libjbig-2.dll`、`libjpeg-8.dll`、`liblept-5.dll`、`liblzma-5.dll`、`libopenjp2.dll`、`libpng16-16.dll`、`libstdc++-6.dll`、`libtesseract-5.dll`、`libtiff-5.dll`、`libwebp-7.dll`、`libwinpthread-1.dll`、`tesseract.exe`、`zlib1.dll`
+    - 确保`tessdata`目录下有`chi_sim.traineddata`、`chi_sim_vert.traineddata`、`chi_tra.traineddata`、`chi_tra_vert.traineddata`、`eng.traineddata`、`jpn.traineddata`、`jpn_vert.traineddata`
 - `截取`屏幕上的某一区域，用鼠标划定区域，划定完按`Enter`
     - 截取完会直接显示截图图片和文本
     - 若想取消划定操作，按`ESC`键

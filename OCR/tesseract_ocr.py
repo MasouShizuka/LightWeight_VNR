@@ -1,13 +1,4 @@
 import pytesseract
-import os
-
-# 若系统未安装Tesseract-OCR,则需要指定位置
-path_tesseract = os.path.abspath('.')
-path_cmd = os.path.join(path_tesseract, r'Tesseract-OCR\tesseract.exe')
-path_tessdata = os.path.join(path_tesseract, r'Tesseract-OCR\tessdata')
-
-pytesseract.pytesseract.tesseract_cmd = path_cmd
-tessdata_dir_config = '--tessdata-dir "' + path_tessdata + '"'
 
 languages = {
     '日文': 'jpn',

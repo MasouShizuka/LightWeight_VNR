@@ -13,6 +13,7 @@ config = {
     'textractor_interval': 0,
 
     # OCR相关
+    'tesseract_OCR_path': os.path.abspath('.') + r'Tesseract-OCR',
     'OCR_language': '日文',
     'OCR_interval': 1,
     'threshold_way': 'BINARY',

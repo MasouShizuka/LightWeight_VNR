@@ -9,7 +9,7 @@ from set_focus import set_focus
 # class Yukari(object):
 #     def __init__(self, **kw):
 #         self.path = kw['path']
-#         self.path_exe = os.path.join(kw['path'], r'VOICEROID.exe')
+#         self.path_exe = os.path.join(kw['path'], 'VOICEROID.exe')
 #         self.alpha = kw['alpha']
 #         self.working = kw['constantly']
 #         self.aside = kw['aside']
@@ -19,7 +19,7 @@ from set_focus import set_focus
 #
 #     def set_path(self, path):
 #         self.path = path
-#         self.path_exe = os.path.join(path, r'VOICEROID.exe')
+#         self.path_exe = os.path.join(path, 'VOICEROID.exe')
 #
 #     def set_transparency(self, alpha):
 #         try:
@@ -77,7 +77,7 @@ from set_focus import set_focus
 class Yukari2(object):
     def __init__(self, **kw):
         self.path = kw['path']
-        self.path_exe = os.path.join(kw['path'], r'VOICEROID.exe')
+        self.path_exe = os.path.join(kw['path'], 'VOICEROID.exe')
         self.working = kw['constantly']
         self.aside = kw['aside']
         self.character = kw['character']
@@ -89,7 +89,7 @@ class Yukari2(object):
 
     def set_path(self, path):
         self.path = path
-        self.path_exe = os.path.join(path, r'VOICEROID.exe')
+        self.path_exe = os.path.join(path, 'VOICEROID.exe')
 
     def set_aside(self, aside):
         self.aside = aside

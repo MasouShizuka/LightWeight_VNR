@@ -10,7 +10,7 @@ from pyperclip import copy
 class Youdao(object):
     def __init__(self, **kw):
         self.path = kw['path']
-        self.path_exe = os.path.join(kw['path'], r'YoudaoDict.exe')
+        self.path_exe = os.path.join(kw['path'], 'YoudaoDict.exe')
         self.interval = kw['interval']
         self.get_translate = kw['get_translate']
         self.working = False
@@ -21,7 +21,7 @@ class Youdao(object):
 
     def set_path(self, path):
         self.path = path
-        self.path_exe = os.path.join(path, r'YoudaoDict.exe')
+        self.path_exe = os.path.join(path, 'YoudaoDict.exe')
 
     def set_interval(self, interval):
         self.interval = float(interval)

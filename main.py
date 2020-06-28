@@ -12,7 +12,7 @@ from subprocess import Popen, PIPE
 from PIL import Image
 from pyautogui import position, screenshot, size
 from pyperclip import copy
-from OCR.tesseract_OCR import languages, lang_translate, tesseract_OCR
+from OCR.tesseract_OCR import pytesseract, languages, lang_translate, tesseract_OCR
 from OCR.threshold_ways import threshold_ways, threshold_name
 from Translator.jbeijing import jbeijing_to, jbeijing_translate, jbeijing
 from Translator.baidu import Baidu
@@ -307,7 +307,7 @@ class Main_Window(object):
                             sg.Input(
                                 key='jbeijing_path',
                                 default_text=self.config['jbeijing_path'],
-                                size=(57, 1),
+                                size=(50, 1),
                             ),
                             sg.FolderBrowse('目录', key='jbeijing_dir'),
                         ],
@@ -342,7 +342,7 @@ class Main_Window(object):
                             sg.Input(
                                 key='youdao_path',
                                 default_text=self.config['youdao_path'],
-                                size=(57, 1),
+                                size=(50, 1),
                             ),
                             sg.FolderBrowse('目录', key='youdao_dir'),
                         ],
@@ -387,7 +387,7 @@ class Main_Window(object):
                             sg.Input(
                                 key='baidu_appid',
                                 default_text=self.config['baidu_appid'],
-                                size=(57, 1),
+                                size=(50, 1),
                             ),
                         ],
                         [
@@ -395,7 +395,7 @@ class Main_Window(object):
                             sg.Input(
                                 key='baidu_key',
                                 default_text=self.config['baidu_key'],
-                                size=(57, 1),
+                                size=(50, 1),
                             ),
                         ],
                     ],
@@ -444,7 +444,7 @@ class Main_Window(object):
                             sg.Input(
                                 key='yukari2_path',
                                 default_text=self.config['yukari2_path'],
-                                size=(57, 1),
+                                size=(50, 1),
                             ),
                             sg.FolderBrowse('目录', key='yukari2_dir'),
                         ],
@@ -567,7 +567,7 @@ class Main_Window(object):
                             sg.Input(
                                 key='textractor_path',
                                 default_text=self.config['textractor_path'],
-                                size=(57, 1),
+                                size=(50, 1),
                             ),
                             sg.FolderBrowse('目录', key='textractor_dir'),
                         ],
@@ -589,8 +589,17 @@ class Main_Window(object):
         config_OCR = [
             [
                 sg.Frame(
-                    '语言',
+                    'Tesseract-OCR',
                     [
+                        [
+                            sg.Text('Tesseract-OCR路径：'),
+                            sg.Input(
+                                key='tesseract_OCR_path',
+                                default_text=self.config['tesseract_OCR_path'],
+                                size=(50, 1),
+                            ),
+                            sg.FolderBrowse('目录', key='tesseract_OCR_dir'),
+                        ],
                         [
                             sg.Text('识别语言：'),
                             sg.Combo(
@@ -678,7 +687,7 @@ class Main_Window(object):
                             sg.Input(
                                 key='garbage_chars',
                                 default_text=self.config['garbage_chars'],
-                                size=(57, 1),
+                                size=(50, 1),
                             ),
                         ],
                         [
@@ -686,7 +695,7 @@ class Main_Window(object):
                             sg.Input(
                                 key='re',
                                 default_text=self.config['re'],
-                                size=(57, 1),
+                                size=(50, 1),
                             ),
                         ],
                     ],
@@ -802,6 +811,7 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
                         [
                             sg.Text(
                                 '\
+设置Tesseract-OCR路径\n\n\
 截取屏幕上的某一区域，用鼠标划定区域，划定完按Enter\n\n\
 截取完会直接显示截图图片和文本\n\n\
 若想取消划定操作，按ESC键\n\n\
@@ -960,6 +970,9 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
                     self.config[i] = int(values[i])
                 else:
                     self.config[i] = values[i]
+
+            pytesseract.pytesseract.tesseract_cmd = os.path.join(self.config['tesseract_OCR_path'], 'tesseract.exe')
+            tessdata_dir_config = '--tessdata-dir "' + os.path.join(self.config['tesseract_OCR_path'], 'tessdata') + '"'
 
             if self.youdao:
                 self.youdao.set_interval(self.config['youdao_interval'])
