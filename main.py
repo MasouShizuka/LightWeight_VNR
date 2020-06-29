@@ -6,7 +6,6 @@ import psutil
 from config import config
 from game import game, start_mode, start_directly, start_with_locale_emulator
 from threading import Thread
-from process_ignore import process_ignore_list
 from time import sleep
 from subprocess import Popen, PIPE
 from PIL import Image
@@ -1189,14 +1188,13 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
         for proc in psutil.process_iter():
             try:
                 p = proc.as_dict(attrs=['pid', 'name'])
-                if p['name'] not in process_ignore_list:
-                    process = str(p['pid']) + ' - ' + str(p['name'])
+                process = str(p['pid']) + ' - ' + str(p['name'])
 
-                    if p['pid'] == self.game['curr_game_id'] and \
-                       p['name'] == self.game['curr_game_name']:
-                        game_process = process
+                if p['pid'] == self.game['curr_game_id'] and \
+                    p['name'] == self.game['curr_game_name']:
+                    game_process = process
 
-                    processes.append(process)
+                processes.append(process)
             except:
                 pass
         self.main_window['process'].update(values=processes)
