@@ -64,7 +64,7 @@ class Main_Window(object):
         )
         self.text_baidu_translate = ''
         # TTS相关变量
-        self.yukari2 = None
+        self.yukari = None
 
         # 浮动窗口相关变量
         self.float = False
@@ -124,12 +124,12 @@ class Main_Window(object):
                     self.youdao = None
 
             # 语音界面
-            elif event == '启动Yukari2':
-                self.yukari2_start()
-            elif event == '终止Yukari2':
-                if self.yukari2:
-                    self.yukari2.stop()
-                    self.yukari2 = None
+            elif event == '启动Yukari':
+                self.yukari_start()
+            elif event == '终止Yukari':
+                if self.yukari:
+                    self.yukari.stop()
+                    self.yukari = None
 
             # 设置界面
             elif event.startswith('保存'):
@@ -141,8 +141,8 @@ class Main_Window(object):
 
         if self.youdao:
             self.youdao.stop()
-        if self.yukari2:
-            self.yukari2.stop()
+        if self.yukari:
+            self.yukari.stop()
 
         self.main_window.close()
 
@@ -430,44 +430,44 @@ class Main_Window(object):
             ],
         ]
 
-        TTS_yukari2 = [
+        TTS_yukari = [
             [
                 sg.Frame(
-                    'Yukari2',
+                    'Yukari',
                     [
                         [
-                            sg.Text('Yukari2：   '),
-                            sg.Button('启动Yukari2', pad=(20, 0)),
-                            sg.Button('终止Yukari2', pad=(20, 0)),
+                            sg.Text('Yukari：   '),
+                            sg.Button('启动Yukari', pad=(20, 0)),
+                            sg.Button('终止Yukari', pad=(20, 0)),
                         ],
                         [
-                            sg.Text('Yukari2路径：'),
+                            sg.Text('Yukari路径：'),
                             sg.Input(
-                                key='yukari2_path',
-                                default_text=self.config['yukari2_path'],
+                                key='yukari_path',
+                                default_text=self.config['yukari_path'],
                                 size=(50, 1),
                             ),
-                            sg.FolderBrowse('目录', key='yukari2_dir'),
+                            sg.FolderBrowse('目录', key='yukari_dir'),
                         ],
                         [
                             sg.Text('连续阅读：   '),
                             sg.Checkbox(
                                 '启用',
-                                key='yukari2_constantly',
-                                default=self.config['yukari2_constantly'],
+                                key='yukari_constantly',
+                                default=self.config['yukari_constantly'],
                             )
                         ],
                         [
                             sg.Text('阅读内容：   '),
                             sg.Checkbox(
                                 '旁白',
-                                key='yukari2_aside',
-                                default=self.config['yukari2_aside'],
+                                key='yukari_aside',
+                                default=self.config['yukari_aside'],
                             ),
                             sg.Checkbox(
                                 '角色',
-                                key='yukari2_character',
-                                default=self.config['yukari2_character'],
+                                key='yukari_character',
+                                default=self.config['yukari_character'],
                             ),
                         ],
                     ],
@@ -484,7 +484,7 @@ class Main_Window(object):
                             sg.TabGroup(
                                 [
                                     [
-                                        sg.Tab('结月', TTS_yukari2),
+                                        sg.Tab('Yukari', TTS_yukari),
                                     ]
                                 ],
                                 tab_location='lefttop',
@@ -902,12 +902,12 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
         help_TTS = [
             [
                 sg.Frame(
-                    'Yukari2',
+                    'Yukari',
                     [
                         [
                             sg.Text(
                                 '\
-设置好Yukari2路径后，点击启动Yukari2即可（可最小化）\n\n\
+设置好Yukari路径后，点击启动Yukari即可（可最小化）\n\n\
 连续阅读：连续阅读抓取文本，即抓取到新文本时读取新文本\n\n\
 阅读内容：勾上的内容会读取，反之忽略\n\n\
 判断依据：有「、『、（的为角色对话，反之为旁白',
@@ -984,10 +984,10 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
                 self.baidu.set_appid(self.config['baidu_appid'])
                 self.baidu.set_key(self.config['baidu_key'])
 
-            if self.yukari2:
-                self.yukari2.working = self.config['yukari2_constantly']
-                self.yukari2.set_aside(self.config['yukari2_aside'])
-                self.yukari2.set_character(self.config['yukari2_character'])
+            if self.yukari:
+                self.yukari.working = self.config['yukari_constantly']
+                self.yukari.set_aside(self.config['yukari_aside'])
+                self.yukari.set_character(self.config['yukari_character'])
 
             with open('config.json', 'w') as f:
                 json.dump(self.config, f, indent=4, ensure_ascii=False)
@@ -1064,9 +1064,9 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
         except:
             pass
 
-        if self.yukari2 and self.yukari2.working:
-            yukari2_thread = Thread(target=self.yukari2.read_text, args=(self.text, pid))
-            yukari2_thread.start()
+        if self.yukari and self.yukari.working:
+            yukari_thread = Thread(target=self.yukari.read_text, args=(self.text, pid))
+            yukari_thread.start()
 
         if self.youdao and self.youdao.working:
             youdao_thread = Thread(target=self.youdao_thread, args=(text, pid))
@@ -1512,21 +1512,21 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
             )
             self.youdao.start()
 
-    # yukari2启动按钮函数
-    def yukari2_start(self):
-        yukari2_path = os.path.join(self.config['yukari2_path'], 'VOICEROID.exe')
-        if not os.path.exists(self.config['yukari2_path']) or \
-           not os.path.exists(yukari2_path):
-            sg.Popup('提示', 'Yukari2路径不正确')
+    # yukari启动按钮函数
+    def yukari_start(self):
+        yukari_path = os.path.join(self.config['yukari_path'], 'VOICEROID.exe')
+        if not os.path.exists(self.config['yukari_path']) or \
+           not os.path.exists(yukari_path):
+            sg.Popup('提示', 'Yukari路径不正确')
         else:
-            from TTS.yukari2 import Yukari2
-            self.yukari2 = Yukari2(
-                path=self.config['yukari2_path'],
-                constantly=self.config['yukari2_constantly'],
-                aside=self.config['yukari2_aside'],
-                character=self.config['yukari2_character'],
+            from TTS.yukari import Yukari
+            self.yukari = Yukari(
+                path=self.config['yukari_path'],
+                constantly=self.config['yukari_constantly'],
+                aside=self.config['yukari_aside'],
+                character=self.config['yukari_character'],
             )
-            self.yukari2.start()
+            self.yukari.start()
 
     # 浮动按键函数
     def float_window(self):
@@ -1615,10 +1615,10 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
             elif event == '暂停':
                 self.textractor_pause = not self.textractor_pause
             elif event == '阅读':
-                if not self.yukari2:
-                    self.yukari2_start()
+                if not self.yukari:
+                    self.yukari_start()
                 else:
-                    self.yukari2.read(self.text)
+                    self.yukari.read(self.text)
 
             if self.textractor_working or self.OCR_working:
                 if self.config['text_origin'] and \

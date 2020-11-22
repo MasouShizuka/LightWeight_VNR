@@ -31,10 +31,10 @@ config = {
     'baidu_key': '',
 
     # TTS相关
-    'yukari2_path': os.path.abspath('.') + r'\Yukari2',
-    'yukari2_constantly': False,
-    'yukari2_aside': True,
-    'yukari2_character': True,
+    'yukari_path': os.path.abspath('.') + r'\Yukari',
+    'yukari_constantly': False,
+    'yukari_aside': True,
+    'yukari_character': True,
 
     # 文本相关
     'deduplication': 1,
