@@ -3,15 +3,16 @@ import os
 import re
 import json
 import psutil
-from pywinauto.handleprops import text
-from config import config
-from game import game, start_mode, start_directly, start_with_locale_emulator
 from threading import Thread
 from time import sleep
 from subprocess import Popen, PIPE
 from PIL import Image
 from pyautogui import position, screenshot, size
 from pyperclip import copy
+from pyhk import pyhk
+
+from config import default_config
+from game import game_info, start_mode, start_directly, start_with_locale_emulator
 
 from OCR.tesseract_OCR import pytesseract, languages, lang_translate, tesseract_OCR
 from OCR.threshold_ways import threshold_ways, threshold_name
@@ -31,12 +32,12 @@ class Main_Window(object):
         super().__init__()
 
         # 默认设置参数
-        self.config = config
+        self.config = default_config
         # 读取设置
         self.load_config()
 
         # 默认游戏信息
-        self.game = game
+        self.game = game_info
         # 读取游戏信息
         self.load_game()
         self.games = [i['name'] for i in self.game['game_list']]
@@ -59,10 +60,10 @@ class Main_Window(object):
 
         # 文本相关变量
         self.text = ''
-        # Jbeijing相关变量
+        # JBeijing相关变量
         self.jbeijing = JBeijing(
             path=self.config['jbeijing_path'],
-            jbeijing_to = self.config['jbeijing_to'],
+            jbeijing_to=self.config['jbeijing_to'],
             working=self.config['jbeijing'],
         )
         # 有道相关变量
@@ -99,6 +100,13 @@ class Main_Window(object):
 
         # 浮动窗口相关变量
         self.float = False
+
+        # 添加快捷键
+        # ; -> 暂停
+        # ' -> 阅读当前文本
+        hot = pyhk()
+        hot.addHotkey(['Oem_1'], self.textractor_pause_or_resume)
+        hot.addHotkey(['Oem_7'], self.read_curr_text)
 
         # 主窗口
         self.main_window = sg.Window(
@@ -200,7 +208,7 @@ class Main_Window(object):
             ],
         ]
 
-        game_info = [
+        game = [
             [
                 sg.Text('游戏名称：'),
                 sg.Input(
@@ -220,7 +228,7 @@ class Main_Window(object):
                     '目录',
                     key='game_dir',
                     size=(5, 1),
-                    font=('Microsoft YaHei Mono', 11)
+                    font=('Microsoft YaHei Mono', 12)
                 ),
             ],
             [
@@ -258,7 +266,7 @@ class Main_Window(object):
             [
                 sg.Frame(
                     '游戏信息',
-                    layout=game_info,
+                    layout=game,
                     element_justification='c',
                 )
             ],
@@ -454,9 +462,9 @@ class Main_Window(object):
                             sg.TabGroup(
                                 [
                                     [
+                                        sg.Tab('北京', translate_jbeijing),
                                         sg.Tab('有道', translate_youdao),
                                         sg.Tab('百度', translate_baidu),
-                                        sg.Tab('北京', translate_jbeijing),
                                     ]
                                 ],
                                 tab_location='lefttop',
@@ -960,6 +968,29 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
             ],
         ]
 
+        help_float = [
+            [
+                sg.Frame(
+                    '浮动',
+                    [
+                        [
+                            sg.Text(
+                                '\
+打开浮动窗口，会隐藏主窗口，并显示设置中启用的条目，包括原文、各种翻译\n\n\
+可在抓取和光学中打开浮动\n\n\
+浮动窗口可通过按ESC和右键关闭的方式退出\n\n\
+浮动窗口包含暂停和阅读的功能键，功能以及快捷键如下\n\n\
+浮动窗口包含暂停和阅读的功能键，功能以及快捷键如下\n\n\
+暂停：;，即暂停Textractor的文本抓取\n\n\
+阅读：\'，即阅读当前抓取的文本',
+                                pad=(10, 10),
+                            ),
+                        ],
+                    ],
+                ),
+            ],
+        ]
+
         help_layout = [
             [
                 sg.TabGroup(
@@ -969,8 +1000,9 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
                             sg.Tab('抓取', help_textractor),
                             sg.Tab('光学', help_OCR),
                             sg.Tab('翻译', help_translate),
-                            sg.Tab('文本', help_text),
                             sg.Tab('语音', help_TTS),
+                            sg.Tab('文本', help_text),
+                            sg.Tab('浮动', help_float),
                         ]
                     ],
                     tab_location='lefttop',
@@ -1005,7 +1037,7 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
             for i in self.config:
                 if i == 'alpha':
                     self.main_window.SetAlpha(values['alpha'])
-                    
+
                 if 'interval' in i:
                     self.config[i] = float(values[i])
                 elif i == 'deduplication':
@@ -1018,7 +1050,7 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
 
             for translator in self.translators.values():
                 translator.update_config(self.config)
-                
+
             for speaker in self.TTS.values():
                 speaker.update_config(self.config)
 
@@ -1092,12 +1124,13 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
         # TTS阅读
         for speaker in self.TTS.values():
             if speaker and speaker.working and speaker.constantly:
-                thread = Thread(target=speaker.read_text, args=(self.text))
+                thread = Thread(target=speaker.read_text, args=(self.text,))
                 thread.start()
 
         # 翻译器翻译
         for translator in self.translators.values():
             if translator and translator.working:
+                print('test')
                 thread = Thread(target=translator.thread, args=(text, self.text_translate, pid))
                 thread.start()
 
@@ -1124,30 +1157,30 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
             game_name = os.path.split(game_path)[1]
             game_name = os.path.splitext(game_name)[0]
 
-        for i in self.game['game_list']:
+        for game in self.game['game_list']:
             # 若已存在，则修改游戏列表
-            if i['name'] == game_name or \
-               i['path'] == game_path:
-                index = self.games.index(i['name'])
+            if game['name'] == game_name or \
+               game['path'] == game_path:
+                index = self.games.index(game['name'])
                 self.games[index] = game_name
                 self.main_window['game_list'].update(values=self.games)
 
-                i['name'] = game_name
-                i['path'] = game_path
-                i['hook_code'] = game_hook_code
-                i['start_mode'] = game_start_mode
+                game['name'] = game_name
+                game['path'] = game_path
+                game['hook_code'] = game_hook_code
+                game['start_mode'] = game_start_mode
                 self.save_game()
 
                 return
 
         # 若不存在，则添加到游戏列表
-        game_info = {
+        game = {
             'name': game_name,
             'path': game_path,
             'hook_code': game_hook_code,
             'start_mode': game_start_mode,
         }
-        self.game['game_list'].append(game_info)
+        self.game['game_list'].append(game)
         self.games.append(game_name)
         self.save_game()
         self.main_window['game_list'].update(values=self.games)
@@ -1216,7 +1249,7 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
                 process = str(p['pid']) + ' - ' + str(p['name'])
 
                 if p['pid'] == self.game['curr_game_id'] and \
-                    p['name'] == self.game['curr_game_name']:
+                   p['name'] == self.game['curr_game_name']:
                     game_process = process
 
                 processes.append(process)
@@ -1310,7 +1343,10 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
 
                         for translator in self.translators.values():
                             if translator and translator.working:
-                                self.main_window['content'].update(translator.name + ':\n' + self.text_translate[translator.label] + '\n\n', append=True)
+                                self.main_window['content'].update(
+                                    translator.name + ':\n' + self.text_translate[translator.label] + '\n\n',
+                                    append=True,
+                                )
 
             sleep(self.config['textractor_interval'])
 
@@ -1335,6 +1371,9 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
         self.game['curr_game_name'] = p.name()
         self.save_game()
         self.attach(pid)
+
+    def textractor_pause_or_resume(self):
+        self.textractor_pause = not self.textractor_pause
 
     def hook_code(self, pid, hook_code):
         self.cli.stdin.write(hook_code + ' -P' + str(pid) + '\n')
@@ -1372,7 +1411,7 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
             alpha_channel=self.config['alpha'],
         )
 
-        rule = re.compile(r'^\/.+@.+$')
+        rule = re.compile(r'^/.+@.+$')
         while True:
             event, values = window.read()
             if event is None:
@@ -1422,19 +1461,19 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
         graph = screenshot_window['graph']
         graph.DrawImage('Screenshot.png', location=(0, full_size[1]))
 
-        draging = False
+        dragging = False
         area = None
         while True:
             event, values = screenshot_window.read(timeout=10)
             if event is None:
                 break
             elif event == 'graph':
-                if not draging:
+                if not dragging:
                     self.x1, self.y1 = position()
-                draging = True
+                dragging = True
             elif event == 'graph+UP':
                 self.x2, self.y2 = position()
-                draging = False
+                dragging = False
                 graph.DeleteFigure(area)
                 area = graph.DrawRectangle(
                     (self.x1, full_size[1] - self.y1),
@@ -1451,7 +1490,7 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
             elif event == 'Escape:27':
                 screenshot_window.close()
 
-            if draging:
+            if dragging:
                 graph.DeleteFigure(area)
                 x, y = position()
                 area = graph.DrawRectangle(
@@ -1493,7 +1532,10 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
 
                 for translator in self.translators.values():
                     if translator and translator.working:
-                        self.main_window['text_OCR'].update(translator.name + ':\n' + self.text_translate[translator.label] + '\n\n', append=True)
+                        self.main_window['text_OCR'].update(
+                            translator.name + ':\n' + self.text_translate[translator.label] + '\n\n',
+                            append=True,
+                        )
 
     # OCR连续识别线程
     def OCR_thread(self):
@@ -1534,6 +1576,13 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
         else:
             self.TTS['yukari'].start()
 
+    def read_curr_text(self):
+        for speaker in self.TTS.values():
+            if speaker and not speaker.working:
+                speaker.start()
+            else:
+                speaker.read(self.text)
+
     # 浮动按键函数
     def float_window(self):
         self.float = True
@@ -1563,12 +1612,12 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
                         )
                     ]
                     text_layout.append(layout)
-        
+
         if len(text_layout) == 0:
-            text = [
-                sg.Text('原文'),
+            blank = [
+                sg.Text('空白'),
             ]
-            text_layout.append(text)
+            text_layout.append(blank)
 
         right_click_menu = ['&Right', ['关闭']]
 
@@ -1585,7 +1634,6 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
                 ),
             ],
         ]
-
 
         window = sg.Window(
             '',
@@ -1606,6 +1654,7 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
 
         prev_text = ''
         prev_translate = {translator.label: '' for translator in self.translators.values()}
+        prev_textractor_status = self.textractor_pause
 
         while True:
             event, values = window.read(timeout=self.config['float_interval'] * 1000)
@@ -1614,17 +1663,16 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
             elif event == '关闭' or event == 'Escape:27':
                 break
             elif event == 'pause':
-                if self.textractor_pause:
-                    window['pause'].update('暂停')
-                else:
-                    window['pause'].update('继续')
-                self.textractor_pause = not self.textractor_pause
+                self.textractor_pause_or_resume()
             elif event == 'read':
-                for speaker in self.TTS.values():
-                    if speaker and not speaker.working:
-                        speaker.start()
-                    else:
-                        speaker.read(self.text)
+                self.read_curr_text()
+
+            if self.textractor_pause != prev_textractor_status:
+                prev_textractor_status = self.textractor_pause
+                if self.textractor_pause:
+                    window['pause'].update('继续')
+                else:
+                    window['pause'].update('暂停')
 
             if self.textractor_working or self.OCR_working:
                 if self.config['text_origin'] and \
@@ -1639,7 +1687,7 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
                             pass
                         else:
                             window[translator.key].update(self.text_translate[translator.label])
-                        
+
         self.float = False
         window.close()
         self.main_window.Normal()
@@ -1647,7 +1695,7 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
 
 if __name__ == '__main__':
     Main_Window()
-    
+
     if os.path.exists('Screenshot.png'):
         os.remove('Screenshot.png')
     if os.path.exists('Area.png'):

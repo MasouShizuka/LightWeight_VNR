@@ -1,9 +1,15 @@
 .idea
 .vscode
 __pycache__
+
+main.exe
+main.spec
+build
+dist
+
 config.json
 game.json
-main.exe
+
 Textractor
 Tesseract-OCR
 JBeijing

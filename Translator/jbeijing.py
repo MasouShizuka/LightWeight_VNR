@@ -13,6 +13,7 @@ jbeijing_to = {
 }
 jbeijing_translate = [i for i in jbeijing_to]
 
+
 class JBeijing(object):
     def __init__(self, **kw):
         self.path = kw['path']
@@ -31,16 +32,16 @@ class JBeijing(object):
     def set_to(self, to):
         self.to = to
 
-    # 借鉴了VNR中调用Jbeijing的方法
+    # 借鉴了VNR中调用JBeijing的方法
     def translate(self, text):
         if not os.path.exists(self.path) or \
            not os.path.exists(self.path_dll):
             return ''
         try:
-            self.path_dll = CDLL(self.path_dll)
+            dll = CDLL(self.path_dll)
             out = create_unicode_buffer(BUFFER_SIZE)
             buf = create_unicode_buffer(BUFFER_SIZE)
-            self.path_dll.JC_Transfer_Unicode(
+            dll.JC_Transfer_Unicode(
                 0,
                 CODEPAGE_JA,
                 self.to,

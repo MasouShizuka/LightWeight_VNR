@@ -1,6 +1,6 @@
 import os
 
-config = {
+default_config = {
     # 界面相关
     'alpha': 1.0,
     'copy': False,

@@ -3,7 +3,7 @@ import psutil
 from time import sleep
 from subprocess import Popen
 
-game = {
+game_info = {
     'curr_game_id': 0,
     'curr_game_name': '',
     'game_list': [],
@@ -26,10 +26,11 @@ def start_directly(game_path):
         pass
     return None
 
+
 def start_with_locale_emulator(locale_emulator_path, game_path, game_name):
     leproc_path = os.path.join(locale_emulator_path, 'LEProc.exe')
     try:
-        p = Popen(
+        Popen(
             r'"' + leproc_path + r'"' + r' -run ' + r'"' + game_path + r'"',
             shell=True,
         )

@@ -1,5 +1,3 @@
-import sys
-sys.path.append("..")
 import os
 from time import sleep
 from pywinauto.application import Application
@@ -81,10 +79,10 @@ class Youdao(object):
             return text_translate
         except:
             return ''
-    
+
     def update_config(self, config):
         self.set_interval(config['youdao_interval'])
         self.set_get_translate(config['youdao_get_translate'])
-    
+
     def thread(self, text, text_translate, pid, *args):
         text_translate[self.label] = self.translate(text, pid=pid)
