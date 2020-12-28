@@ -3,6 +3,7 @@ import os
 import re
 import json
 import psutil
+from pywinauto.handleprops import text
 from config import config
 from game import game, start_mode, start_directly, start_with_locale_emulator
 from threading import Thread
@@ -11,10 +12,15 @@ from subprocess import Popen, PIPE
 from PIL import Image
 from pyautogui import position, screenshot, size
 from pyperclip import copy
+
 from OCR.tesseract_OCR import pytesseract, languages, lang_translate, tesseract_OCR
 from OCR.threshold_ways import threshold_ways, threshold_name
-from Translator.jbeijing import jbeijing_to, jbeijing_translate, jbeijing
+
+from Translator.jbeijing import JBeijing, jbeijing_translate
+from Translator.youdao import Youdao
 from Translator.baidu import Baidu
+
+from TTS.yukari import Yukari
 
 sg.theme('DarkGrey5')
 sg.set_options(font=('Microsoft YaHei Mono', 15))
@@ -40,6 +46,7 @@ class Main_Window(object):
         self.textractor_pause = False
         self.cli = None
         self.fixed_hook = None
+
         # OCR相关变量
         pytesseract.pytesseract.tesseract_cmd = os.path.join(self.config['tesseract_OCR_path'], 'tesseract.exe')
         tessdata_dir_config = '--tessdata-dir "' + os.path.join(self.config['tesseract_OCR_path'], 'tessdata') + '"'
@@ -49,28 +56,53 @@ class Main_Window(object):
         self.y1 = 0
         self.x2 = 0
         self.y2 = 0
+
         # 文本相关变量
         self.text = ''
         # Jbeijing相关变量
-        self.text_jbeijing_translate = ''
+        self.jbeijing = JBeijing(
+            path=self.config['jbeijing_path'],
+            jbeijing_to = self.config['jbeijing_to'],
+            working=self.config['jbeijing'],
+        )
         # 有道相关变量
-        self.youdao = None
-        self.text_youdao_translate = ''
+        self.youdao = Youdao(
+            path=self.config['youdao_path'],
+            interval=self.config['youdao_interval'],
+            get_translate=self.config['youdao_get_translate'],
+        )
         # 百度相关变量
         self.baidu = Baidu(
             appid=self.config['baidu_appid'],
             key=self.config['baidu_key'],
-            enable=self.config['baidu'],
+            working=self.config['baidu'],
         )
-        self.text_baidu_translate = ''
+
+        self.translators = {
+            'jbeijing': self.jbeijing,
+            'youdao': self.youdao,
+            'baidu': self.baidu,
+        }
+        self.text_translate = {translator.label: '' for translator in self.translators.values()}
+
         # TTS相关变量
-        self.yukari = None
+        self.yukari = Yukari(
+            path=self.config['yukari_path'],
+            constantly=self.config['yukari_constantly'],
+            aside=self.config['yukari_aside'],
+            character=self.config['yukari_character'],
+        )
+
+        self.TTS = {
+            'yukari': self.yukari,
+        }
 
         # 浮动窗口相关变量
         self.float = False
 
+        # 主窗口
         self.main_window = sg.Window(
-            'VNR_OCR',
+            'LightWeight_VNR',
             self.interface(),
             resizable=True,
             alpha_channel=self.config['alpha'],
@@ -121,7 +153,7 @@ class Main_Window(object):
             elif event == '终止有道':
                 if self.youdao:
                     self.youdao.stop()
-                    self.youdao = None
+                    self.youdao.working = False
 
             # 语音界面
             elif event == '启动Yukari':
@@ -129,7 +161,6 @@ class Main_Window(object):
             elif event == '终止Yukari':
                 if self.yukari:
                     self.yukari.stop()
-                    self.yukari = None
 
             # 设置界面
             elif event.startswith('保存'):
@@ -139,11 +170,21 @@ class Main_Window(object):
             elif event.startswith('浮动'):
                 self.float_window()
 
-        if self.youdao:
-            self.youdao.stop()
-        if self.yukari:
-            self.yukari.stop()
+        # 退出程序时，关闭所有打开的程序
+        for translator in self.translators.values():
+            if translator and translator.working:
+                try:
+                    translator.stop()
+                except:
+                    pass
+        for speaker in self.TTS.values():
+            if speaker and speaker.working:
+                try:
+                    speaker.stop()
+                except:
+                    pass
 
+        # 关闭主窗口
         self.main_window.close()
 
     # 界面设置
@@ -179,7 +220,7 @@ class Main_Window(object):
                     '目录',
                     key='game_dir',
                     size=(5, 1),
-                    font=('微软雅黑', 11)
+                    font=('Microsoft YaHei Mono', 11)
                 ),
             ],
             [
@@ -957,7 +998,7 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
         ]
         return layout
 
-    # 存储设置
+    # 保存设置
     def save_config(self, values):
         confirm = sg.PopupYesNo('确认保存吗', title='确认')
         if confirm == 'Yes':
@@ -975,19 +1016,11 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
             pytesseract.pytesseract.tesseract_cmd = os.path.join(self.config['tesseract_OCR_path'], 'tesseract.exe')
             tessdata_dir_config = '--tessdata-dir "' + os.path.join(self.config['tesseract_OCR_path'], 'tessdata') + '"'
 
-            if self.youdao:
-                self.youdao.set_interval(self.config['youdao_interval'])
-                self.youdao.set_get_translate(self.config['youdao_get_translate'])
-
-            if self.baidu:
-                self.baidu.enabled = self.config['baidu']
-                self.baidu.set_appid(self.config['baidu_appid'])
-                self.baidu.set_key(self.config['baidu_key'])
-
-            if self.yukari:
-                self.yukari.working = self.config['yukari_constantly']
-                self.yukari.set_aside(self.config['yukari_aside'])
-                self.yukari.set_character(self.config['yukari_character'])
+            for translator in self.translators.values():
+                translator.update_config(self.config)
+                
+            for speaker in self.TTS.values():
+                speaker.update_config(self.config)
 
             with open('config.json', 'w') as f:
                 json.dump(self.config, f, indent=4, ensure_ascii=False)
@@ -1011,22 +1044,9 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
                 config = json.load(f)
             self.game = config
 
-    # 翻译线程，以便同时翻译
-    def jbeijing_thread(self, text):
-        self.text_jbeijing_translate = jbeijing(
-            text,
-            self.config['jbeijing_path'],
-            jbeijing_to[self.config['jbeijing_to']],
-        )
-
-    def youdao_thread(self, text, pid):
-        self.text_youdao_translate = self.youdao.translate(text, pid=pid)
-
-    def baidu_thread(self, text):
-        self.text_baidu_translate = self.baidu.translate(text)
-
     # 文字处理
     def text_process(self, text):
+        # 文本去重
         if self.config['deduplication_auto']:
             i = 1
             while i < len(text):
@@ -1042,9 +1062,11 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
         else:
             text = text[::int(self.config['deduplication'])]
 
+        # 垃圾字符
         for i in re.split(r'\s+', self.config['garbage_chars']):
             text = text.replace(i, '')
 
+        # 正则表达式，拼接()的内容
         rule = re.compile(self.config['re'])
         info = rule.match(text)
         if info:
@@ -1052,45 +1074,43 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
             if len(groups):
                 text = ''.join(groups)
 
+        # 复制处理后的原文
         if self.config['copy']:
             copy(text)
 
+        # 显示在文本框的原文去除换行符
         self.text = text
         text = text.replace('\n', '')
 
+        # 取得游戏窗口pid
         pid = None
         try:
             pid = int(self.main_window['process'].get().split()[0])
         except:
             pass
 
-        if self.yukari and self.yukari.working:
-            yukari_thread = Thread(target=self.yukari.read_text, args=(self.text, pid))
-            yukari_thread.start()
+        # TTS阅读
+        for speaker in self.TTS.values():
+            if speaker and speaker.working and speaker.constantly:
+                thread = Thread(target=speaker.read_text, args=(self.text))
+                thread.start()
 
-        if self.youdao and self.youdao.working:
-            youdao_thread = Thread(target=self.youdao_thread, args=(text, pid))
-            youdao_thread.start()
-
-        if self.baidu and self.baidu.enabled:
-            baidu_thread = Thread(target=self.baidu_thread, args=(text,))
-            baidu_thread.start()
-
-        if self.config['jbeijing']:
-            jbeijing_thread = Thread(target=self.jbeijing_thread, args=(text,))
-            jbeijing_thread.start()
+        # 翻译器翻译
+        for translator in self.translators.values():
+            if translator and translator.working:
+                thread = Thread(target=translator.thread, args=(text, self.text_translate, pid))
+                thread.start()
 
     # 游戏列表点击函数
     def get_game_info(self):
         game_selected = self.main_window['game_list'].get()
-        if len(game_selected):
-            game_list = self.game['game_list']
-            for i in game_list:
-                if i['name'] == game_selected[0]:
-                    self.main_window['game_name'].update(i['name'])
-                    self.main_window['game_path'].update(i['path'])
-                    self.main_window['game_hook_code'].update(i['hook_code'])
-                    self.main_window['game_start_mode'].update(value=i['start_mode'])
+        if len(game_selected) > 0:
+            for game in self.game['game_list']:
+                if game['name'] == game_selected[0]:
+                    self.main_window['game_name'].update(game['name'])
+                    self.main_window['game_path'].update(game['path'])
+                    self.main_window['game_hook_code'].update(game['hook_code'])
+                    self.main_window['game_start_mode'].update(value=game['start_mode'])
                     break
 
     # 添加按钮函数
@@ -1099,11 +1119,13 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
         game_path = self.main_window['game_path'].get()
         game_hook_code = self.main_window['game_hook_code'].get()
         game_start_mode = self.main_window['game_start_mode'].get()
+        # 若游戏名称未填写，则以程序名为游戏名，去掉exe后缀
         if not game_name:
             game_name = os.path.split(game_path)[1]
             game_name = os.path.splitext(game_name)[0]
 
         for i in self.game['game_list']:
+            # 若已存在，则修改游戏列表
             if i['name'] == game_name or \
                i['path'] == game_path:
                 index = self.games.index(i['name'])
@@ -1118,6 +1140,7 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
 
                 return
 
+        # 若不存在，则添加到游戏列表
         game_info = {
             'name': game_name,
             'path': game_path,
@@ -1155,27 +1178,29 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
             pid = start_directly(game_path)
         elif mode == 'Locale Emulator':
             locale_emulator_path = self.config['locale_emulator_path']
-            leproc_path = os.path.join(locale_emulator_path, 'LEProc.exe')
-            if not os.path.exists(locale_emulator_path) or \
-               not os.path.exists(leproc_path):
+            if not os.path.exists(locale_emulator_path):
                 sg.Popup('提示', 'Locale Emulator路径错误')
                 return
+            pid = start_with_locale_emulator(locale_emulator_path, game_path, name)
 
-            pid = start_with_locale_emulator(leproc_path, game_path, name)
-
+        # 若游戏未启动，则直接返回
         if not pid:
-            return
+            return None
 
+        # 启动Textractor
         self.textractor_start()
 
+        # 更新当前游戏信息
         self.game['curr_game_id'] = pid
         self.game['curr_game_name'] = name
         self.save_game()
         self.main_window['process'].update(str(pid) + ' - ' + name)
 
+        # 注入dll
         sleep(1)
         self.attach(pid)
 
+        # 若游戏有特殊码，则写入
         hook_code = self.main_window['game_hook_code'].get()
         if hook_code:
             sleep(1)
@@ -1244,32 +1269,36 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
             encoding='utf-16-le',
         )
         rule = re.compile(r'^(\[.+?\])\s+(.+)$')
-        hooks = []
-        hooks_contents = []
+        hooks = {}
         for line in iter(self.cli.stdout.readline, ''):
+            # 固定钩子列表的钩子
             if self.fixed_hook:
                 self.main_window['hook'].update(self.fixed_hook)
 
+            # 停止则跳出
             if not self.textractor_working:
                 break
+            # 暂停则跳过
             if self.textractor_pause:
                 continue
 
+            # 匹配每行的输出，分成钩子和内容的两部分
             content = rule.match(line)
             if content:
                 hook = content.group(1)
                 text = content.group(2)
 
-                if hook not in hooks:
-                    hooks.append(hook)
-                    hooks_contents.append(line)
-                    self.main_window['hook'].update(values=hooks_contents)
+                # 存入字典并更新界面钩子列表
+                hooks[hook] = line
+                self.main_window['hook'].update(values=list(hooks.values()))
 
+                # 将当前钩子修改为固定钩子，若未固定则读取界面钩子列表当前的钩子
                 if self.fixed_hook:
                     curr_hook = self.fixed_hook
                 else:
                     curr_hook = self.main_window['hook'].get()
 
+                # 读取当前钩子的内容
                 content = rule.match(curr_hook)
                 if content and hook == content.group(1):
                     self.text_process(text)
@@ -1279,14 +1308,9 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
                         self.main_window['content'].update(hook, append=True)
                         self.main_window['content'].update('\n\n' + self.text + '\n\n', append=True)
 
-                        if self.config['jbeijing']:
-                            self.main_window['content'].update('Jbeijing:\n' + self.text_jbeijing_translate + '\n\n', append=True)
-
-                        if self.youdao and self.youdao.get_translate:
-                            self.main_window['content'].update('有道:\n' + self.text_youdao_translate + '\n\n', append=True)
-
-                        if self.baidu and self.baidu.enabled:
-                            self.main_window['content'].update('百度:\n' + self.text_baidu_translate+ '\n\n', append=True)
+                        for translator in self.translators.values():
+                            if translator and translator.working:
+                                self.main_window['content'].update(translator.name + ':\n' + self.text_translate[translator.label] + '\n\n', append=True)
 
             sleep(self.config['textractor_interval'])
 
@@ -1467,14 +1491,9 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
             if not self.float:
                 self.main_window['text_OCR'].update(self.text + '\n\n')
 
-                if self.config['jbeijing']:
-                    self.main_window['text_OCR'].update('JBeijing:\n' + self.text_jbeijing_translate + '\n\n', append=True)
-
-                if self.youdao and self.youdao.get_translate:
-                    self.main_window['text_OCR'].update('有道:\n' + self.text_youdao_translate + '\n\n', append=True)
-
-                if self.baidu and self.baidu.enabled:
-                    self.main_window['text_OCR'].update('百度:\n' + self.text_baidu_translate + '\n\n', append=True)
+                for translator in self.translators.values():
+                    if translator and translator.working:
+                        self.main_window['text_OCR'].update(translator.name + ':\n' + self.text_translate[translator.label] + '\n\n', append=True)
 
     # OCR连续识别线程
     def OCR_thread(self):
@@ -1504,13 +1523,7 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
            not os.path.exists(youdaodict_path):
             sg.Popup('提示', '有道词典路径不正确')
         else:
-            from Translator.youdao import Youdao
-            self.youdao = Youdao(
-                path=self.config['youdao_path'],
-                interval=self.config['youdao_interval'],
-                get_translate=self.config['youdao_get_translate'],
-            )
-            self.youdao.start()
+            self.translators['youdao'].start()
 
     # yukari启动按钮函数
     def yukari_start(self):
@@ -1519,14 +1532,7 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
            not os.path.exists(yukari_path):
             sg.Popup('提示', 'Yukari路径不正确')
         else:
-            from TTS.yukari import Yukari
-            self.yukari = Yukari(
-                path=self.config['yukari_path'],
-                constantly=self.config['yukari_constantly'],
-                aside=self.config['yukari_aside'],
-                character=self.config['yukari_character'],
-            )
-            self.yukari.start()
+            self.TTS['yukari'].start()
 
     # 浮动按键函数
     def float_window(self):
@@ -1539,40 +1545,32 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
                 sg.Text('原文'),
                 sg.Frame(
                     '',
-                    [[sg.Multiline('', key='text', size=(75, 2))]],
+                    [[sg.Multiline('', key='text', size=(95, 2), disabled=True)]],
                 ),
             ]
             text_layout.append(text_origin)
 
-        if self.config['jbeijing']:
-            text_jbeijing = [
-                sg.Text('北京'),
-                sg.Frame(
-                    '',
-                    [[sg.Multiline('', key='text_jbeijing_translated', size=(75, 2))]],
-                ),
+        for translator in self.translators.values():
+            if translator and translator.working:
+                if translator.name == '有道' and not translator.get_translate:
+                    pass
+                else:
+                    layout = [
+                        sg.Text(translator.name),
+                        sg.Frame(
+                            '',
+                            [[sg.Multiline('', key=translator.key, size=(95, 2), disabled=True)]],
+                        )
+                    ]
+                    text_layout.append(layout)
+        
+        if len(text_layout) == 0:
+            text = [
+                sg.Text('原文'),
             ]
-            text_layout.append(text_jbeijing)
+            text_layout.append(text)
 
-        if self.youdao and self.youdao.get_translate:
-            text_youdao = [
-                sg.Text('有道'),
-                sg.Frame(
-                    '',
-                    [[sg.Multiline('', key='text_youdao_translated', size=(75, 2))]],
-                ),
-            ]
-            text_layout.append(text_youdao)
-
-        if self.baidu and self.baidu.enabled:
-            text_baidu = [
-                sg.Text('百度'),
-                sg.Frame(
-                    '',
-                    [[sg.Multiline('', key='text_baidu_translated', size=(75, 2))]],
-                ),
-            ]
-            text_layout.append(text_baidu)
+        right_click_menu = ['&Right', ['关闭']]
 
         layout = [
             [
@@ -1580,13 +1578,14 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
                     [
                         [
                             sg.Column(text_layout),
-                            sg.Button('暂停', pad=(20, 0)),
-                            sg.Button('阅读', pad=(0, 0)),
+                            sg.Button('暂停', key='pause', pad=(10, 0), font=('Microsoft YaHei Mono', 12)),
+                            sg.Button('阅读', key='read', pad=(10, 0), font=('Microsoft YaHei Mono', 12)),
                         ],
                     ],
                 ),
             ],
         ]
+
 
         window = sg.Window(
             '',
@@ -1596,50 +1595,51 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
             margins=(0, 0),
             element_padding=(0, 0),
             resizable=True,
-            force_toplevel=True,
             keep_on_top=True,
             grab_anywhere=True,
+            no_titlebar=True,
+            return_keyboard_events=True,
+            right_click_menu=right_click_menu,
         )
 
         self.main_window.Minimize()
 
         prev_text = ''
-        prev_text_jbeijing = ''
-        prev_text_youdao = ''
-        prev_text_baidu = ''
+        prev_translate = {translator.label: '' for translator in self.translators.values()}
 
         while True:
             event, values = window.read(timeout=self.config['float_interval'] * 1000)
             if event is None:
                 break
-            elif event == '暂停':
-                self.textractor_pause = not self.textractor_pause
-            elif event == '阅读':
-                if not self.yukari:
-                    self.yukari_start()
+            elif event == '关闭' or event == 'Escape:27':
+                break
+            elif event == 'pause':
+                if self.textractor_pause:
+                    window['pause'].update('暂停')
                 else:
-                    self.yukari.read(self.text)
+                    window['pause'].update('继续')
+                self.textractor_pause = not self.textractor_pause
+            elif event == 'read':
+                for speaker in self.TTS.values():
+                    if speaker and not speaker.working:
+                        speaker.start()
+                    else:
+                        speaker.read(self.text)
 
             if self.textractor_working or self.OCR_working:
                 if self.config['text_origin'] and \
                    prev_text != self.text:
                     prev_text = self.text
                     window['text'].update(self.text)
-                if self.config['jbeijing'] and \
-                   prev_text_jbeijing != self.text_jbeijing_translate:
-                    prev_text_jbeijing = self.text_jbeijing_translate
-                    window['text_jbeijing_translated'].update(self.text_jbeijing_translate)
-                if self.youdao and \
-                   self.youdao.get_translate and \
-                   prev_text_youdao != self.text_youdao_translate:
-                    prev_text_youdao = self.text_youdao_translate
-                    window['text_youdao_translated'].update(self.text_youdao_translate)
-                if self.baidu and \
-                   self.baidu.enabled and \
-                   prev_text_baidu != self.text_baidu_translate:
-                    prev_text_baidu = self.text_baidu_translate
-                    window['text_baidu_translated'].update(self.text_baidu_translate)
-
+                for translator in self.translators.values():
+                    if translator and \
+                       translator.working and \
+                       prev_translate[translator.label] != self.text_translate[translator.label]:
+                        if translator.name == '有道' and not translator.get_translate:
+                            pass
+                        else:
+                            window[translator.key].update(self.text_translate[translator.label])
+                        
         self.float = False
         window.close()
         self.main_window.Normal()

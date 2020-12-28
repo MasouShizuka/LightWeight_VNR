@@ -35,9 +35,11 @@ class Yukari(object):
     def __init__(self, **kw):
         self.path = kw['path']
         self.path_exe = os.path.join(kw['path'], 'VOICEROID.exe')
-        self.working = kw['constantly']
+        self.constantly = kw['constantly']
         self.aside = kw['aside']
         self.character = kw['character']
+        self.working = False
+
         self.app = None
         self.win = None
         self.edit = None
@@ -61,15 +63,19 @@ class Yukari(object):
         self.character = character
 
     def start(self):
+        self.stop()
+
         if os.path.exists(self.path):
             try:
                 self.app = Application().start(self.path_exe, work_dir=self.path, timeout=10)
+                self.working = True
             except:
                 pass
 
     def connect(self):
         if os.path.exists(self.path):
             self.app = Application().connect(title_re='VOICEROID')
+            self.working = True
 
     def stop(self):
         try:
@@ -104,7 +110,7 @@ class Yukari(object):
         except:
             pass
 
-    def read_text(self, text, pid=None):
+    def read_text(self, text):
         if '「' in text or \
            '『' in text or \
            '（' in text or \
@@ -114,6 +120,11 @@ class Yukari(object):
         else:
             if self.aside:
                 self.read(text)
+    
+    def update_config(self, config):
+        self.constantly = config['yukari_constantly']
+        self.set_aside(config['yukari_aside'])
+        self.set_character(config['yukari_character'])
 
 
 # 因Voiceroid2存在声源过期问题，所以弃用

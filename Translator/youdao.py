@@ -14,10 +14,15 @@ class Youdao(object):
         self.interval = kw['interval']
         self.get_translate = kw['get_translate']
         self.working = False
+
         self.app = None
         self.win = None
         self.edit_origin = None
         self.edit_translate = None
+
+        self.label = 'text_youdao_translate'
+        self.name = '有道'
+        self.key = 'text_youdao_translated'
 
     def set_path(self, path):
         self.path = path
@@ -30,6 +35,8 @@ class Youdao(object):
         self.get_translate = get_translate
 
     def start(self):
+        self.stop()
+
         if os.path.exists(self.path):
             try:
                 self.app = Application(backend="uia").start(self.path_exe, work_dir=self.path, timeout=10)
@@ -74,3 +81,10 @@ class Youdao(object):
             return text_translate
         except:
             return ''
+    
+    def update_config(self, config):
+        self.set_interval(config['youdao_interval'])
+        self.set_get_translate(config['youdao_get_translate'])
+    
+    def thread(self, text, text_translate, pid, *args):
+        text_translate[self.label] = self.translate(text, pid=pid)

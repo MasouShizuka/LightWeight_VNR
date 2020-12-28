@@ -9,7 +9,11 @@ class Baidu(object):
     def __init__(self, **kw):
         self.appid = kw['appid']
         self.key = kw['key']
-        self.enabled = kw['enable']
+        self.working = kw['working']
+
+        self.label = 'text_baidu_translate'
+        self.name = '百度'
+        self.key = 'text_baidu_translated'
 
     def set_appid(self, appid):
         self.appid = str(appid)
@@ -61,10 +65,17 @@ class Baidu(object):
                 code = res['error_code']
                 return self.errorhandel(code)
             except Exception as e:
-                print(e)
                 return res['trans_result'][0]['dst']
         except Exception as e:
             print(e)
         finally:
             if httpClient:
                 httpClient.close()
+
+    def update_config(self, config):
+        self.set_appid(config['baidu_appid'])
+        self.set_key(config['baidu_key'])
+        self.working = config['baidu']
+    
+    def thread(self, text, text_translate, *args):
+        text_translate[self.label] = self.translate(text)
