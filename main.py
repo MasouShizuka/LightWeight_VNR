@@ -159,16 +159,13 @@ class Main_Window(object):
             elif event == '启动有道':
                 self.youdao_start()
             elif event == '终止有道':
-                if self.youdao:
-                    self.youdao.stop()
-                    self.youdao.working = False
+                self.translators['youdao'].stop()
 
             # 语音界面
             elif event == '启动Yukari':
                 self.yukari_start()
             elif event == '终止Yukari':
-                if self.yukari:
-                    self.yukari.stop()
+                self.TTS['yukari'].stop()
 
             # 设置界面
             elif event.startswith('保存'):
@@ -179,14 +176,16 @@ class Main_Window(object):
                 self.float_window()
 
         # 退出程序时，关闭所有打开的程序
-        for translator in self.translators.values():
-            if translator and translator.working:
+        for translator_name in self.translators:
+            translator = self.translators[translator_name]
+            if translator.working:
                 try:
                     translator.stop()
                 except:
                     pass
-        for speaker in self.TTS.values():
-            if speaker and speaker.working:
+        for speaker_name in self.TTS:
+            speaker = self.TTS[speaker_name]
+            if speaker.working:
                 try:
                     speaker.stop()
                 except:
@@ -1048,10 +1047,12 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
             pytesseract.pytesseract.tesseract_cmd = os.path.join(self.config['tesseract_OCR_path'], 'tesseract.exe')
             tessdata_dir_config = '--tessdata-dir "' + os.path.join(self.config['tesseract_OCR_path'], 'tessdata') + '"'
 
-            for translator in self.translators.values():
+            for translator_name in self.translators:
+                translator = self.translators[translator_name]
                 translator.update_config(self.config)
 
-            for speaker in self.TTS.values():
+            for speaker_name in self.TTS:
+                speaker = self.TTS[speaker_name]
                 speaker.update_config(self.config)
 
             with open('config.json', 'w') as f:
@@ -1122,15 +1123,16 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
             pass
 
         # TTS阅读
-        for speaker in self.TTS.values():
-            if speaker and speaker.working and speaker.constantly:
+        for speaker_name in self.TTS:
+            speaker = self.TTS[speaker_name]
+            if speaker.working and speaker.constantly:
                 thread = Thread(target=speaker.read_text, args=(self.text,))
                 thread.start()
 
         # 翻译器翻译
-        for translator in self.translators.values():
-            if translator and translator.working:
-                print('test')
+        for translator_name in self.translators:
+            translator = self.translators[translator_name]
+            if translator.working:
                 thread = Thread(target=translator.thread, args=(text, self.text_translate, pid))
                 thread.start()
 
@@ -1341,8 +1343,9 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
                         self.main_window['content'].update(hook, append=True)
                         self.main_window['content'].update('\n\n' + self.text + '\n\n', append=True)
 
-                        for translator in self.translators.values():
-                            if translator and translator.working:
+                        for translator_name in self.translators:
+                            translator = self.translators[translator_name]
+                            if translator.working:
                                 self.main_window['content'].update(
                                     translator.name + ':\n' + self.text_translate[translator.label] + '\n\n',
                                     append=True,
@@ -1530,8 +1533,9 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
             if not self.float:
                 self.main_window['text_OCR'].update(self.text + '\n\n')
 
-                for translator in self.translators.values():
-                    if translator and translator.working:
+                for translator_name in self.translators:
+                    translator = self.translators[translator_name]
+                    if translator.working:
                         self.main_window['text_OCR'].update(
                             translator.name + ':\n' + self.text_translate[translator.label] + '\n\n',
                             append=True,
@@ -1577,11 +1581,17 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
             self.TTS['yukari'].start()
 
     def read_curr_text(self):
-        for speaker in self.TTS.values():
-            if speaker and not speaker.working:
-                speaker.start()
-            else:
+        flag = True
+        for speaker_name in self.TTS:
+            speaker = self.TTS[speaker_name]
+            if speaker.working:
                 speaker.read(self.text)
+                flag = False
+        if flag:
+            for speaker_name in self.TTS:
+                default_speaker = self.TTS[speaker_name]
+                default_speaker.start()
+                break
 
     # 浮动按键函数
     def float_window(self):
@@ -1599,8 +1609,9 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
             ]
             text_layout.append(text_origin)
 
-        for translator in self.translators.values():
-            if translator and translator.working:
+        for translator_name in self.translators:
+            translator = self.translators[translator_name]
+            if translator.working:
                 if translator.name == '有道' and not translator.get_translate:
                     pass
                 else:
@@ -1679,9 +1690,9 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
                    prev_text != self.text:
                     prev_text = self.text
                     window['text'].update(self.text)
-                for translator in self.translators.values():
-                    if translator and \
-                       translator.working and \
+                for translator_name in self.translators:
+                    translator = self.translators[translator_name]
+                    if translator.working and \
                        prev_translate[translator.label] != self.text_translate[translator.label]:
                         if translator.name == '有道' and not translator.get_translate:
                             pass

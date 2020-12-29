@@ -43,11 +43,18 @@ class Youdao(object):
                 pass
 
     def connect(self):
+        self.win = None
+        self.edit_origin = None
+        self.edit_translate = None
+
         if os.path.exists(self.path):
             self.app = Application(backend="uia").connect(class_name="YodaoMainWndClass")
             self.working = True
 
     def stop(self):
+        self.win = None
+        self.edit_origin = None
+        self.edit_translate = None
         try:
             self.app.kill()
         except:

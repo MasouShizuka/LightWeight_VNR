@@ -71,11 +71,20 @@ class Yukari(object):
                 pass
 
     def connect(self):
+        self.win = None
+        self.edit = None
+        self.play_button = None
+        self.stop_button = None
+
         if os.path.exists(self.path):
             self.app = Application().connect(title_re='VOICEROID')
             self.working = True
 
     def stop(self):
+        self.win = None
+        self.edit = None
+        self.play_button = None
+        self.stop_button = None
         try:
             self.app.kill()
         except:
