@@ -183,6 +183,7 @@ class Main_Window(object):
                     translator.stop()
                 except:
                     pass
+                
         for speaker_name in self.TTS:
             speaker = self.TTS[speaker_name]
             if speaker.working:
@@ -979,7 +980,6 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
 可在抓取和光学中打开浮动\n\n\
 浮动窗口可通过按ESC和右键关闭的方式退出\n\n\
 浮动窗口包含暂停和阅读的功能键，功能以及快捷键如下\n\n\
-浮动窗口包含暂停和阅读的功能键，功能以及快捷键如下\n\n\
 暂停：;，即暂停Textractor的文本抓取\n\n\
 阅读：\'，即阅读当前抓取的文本',
                                 pad=(10, 10),
@@ -1034,11 +1034,14 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
         confirm = sg.PopupYesNo('确认保存吗', title='确认')
         if confirm == 'Yes':
             for i in self.config:
+                # 透明度设置更新时更新界面透明度
                 if i == 'alpha':
                     self.main_window.SetAlpha(values['alpha'])
 
+                # 间隔设置转成浮点数
                 if 'interval' in i:
                     self.config[i] = float(values[i])
+                # 去重数设置转成整形
                 elif i == 'deduplication':
                     self.config[i] = int(values[i])
                 else:
@@ -1047,10 +1050,12 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
             pytesseract.pytesseract.tesseract_cmd = os.path.join(self.config['tesseract_OCR_path'], 'tesseract.exe')
             tessdata_dir_config = '--tessdata-dir "' + os.path.join(self.config['tesseract_OCR_path'], 'tessdata') + '"'
 
+            # 各种翻译器更新设置
             for translator_name in self.translators:
                 translator = self.translators[translator_name]
                 translator.update_config(self.config)
 
+            # 各种TTS更新设置
             for speaker_name in self.TTS:
                 speaker = self.TTS[speaker_name]
                 speaker.update_config(self.config)
@@ -1138,6 +1143,7 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
 
     # 游戏列表点击函数
     def get_game_info(self):
+        # 界面更新所选游戏的相关信息
         game_selected = self.main_window['game_list'].get()
         if len(game_selected) > 0:
             for game in self.game['game_list']:
@@ -1189,6 +1195,7 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
 
     # 删除按钮函数
     def delete_game(self):
+        # 删除所选游戏的相关信息
         game_name = self.main_window['game_name'].get()
         for i in self.game['game_list']:
             if i['name'] == game_name:
@@ -1273,6 +1280,7 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
             sg.Popup('提示', 'Textractor路径不正确')
             return
 
+        # 启动时自动更新进程列表
         self.refresh_process_list()
 
         self.textractor_working = True
@@ -1282,6 +1290,7 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
 
     # 终止按钮函数
     def textractor_stop(self):
+        # 终止时将抓取界面清空
         self.main_window['process'].update('')
         self.main_window['process'].update(values=[])
         self.main_window['hook'].update('')
@@ -1338,6 +1347,7 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
                 if content and hook == content.group(1):
                     self.text_process(text)
 
+                    # 若未启动浮动窗口，则更新界面的内容
                     if not self.float:
                         self.main_window['content'].update('')
                         self.main_window['content'].update(hook, append=True)
@@ -1414,6 +1424,7 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
             alpha_channel=self.config['alpha'],
         )
 
+        # 特殊码需满足特定的格式
         rule = re.compile(r'^/.+@.+$')
         while True:
             event, values = window.read()
@@ -1432,10 +1443,13 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
 
     # 截取按钮函数
     def get_area(self):
+        # 隐藏主窗口
         self.main_window.Hide()
 
+        # 截取全屏
         im = screenshot()
         im.save('Screenshot.png')
+
         full_size = size()
         screenshot_layout = [
             [
@@ -1470,10 +1484,12 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
             event, values = screenshot_window.read(timeout=10)
             if event is None:
                 break
+            # 鼠标按下，则记录起始坐标，并进入拖拽
             elif event == 'graph':
                 if not dragging:
                     self.x1, self.y1 = position()
                 dragging = True
+            # 鼠标抬起，则记录终止坐标，并结束拖拽
             elif event == 'graph+UP':
                 self.x2, self.y2 = position()
                 dragging = False
@@ -1483,6 +1499,7 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
                     (self.x2, full_size[1] - self.y2),
                     line_color='red',
                 )
+            # 若按下回车，则完成截取
             elif not event.strip():
                 screenshot_window.close()
                 if self.x1 > self.x2:
@@ -1490,9 +1507,11 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
                 if self.y1 > self.y2:
                     self.y1, self.y2 = self.y2, self.y1
                 self.OCR_work()
+            # 若按下ESC，则退出
             elif event == 'Escape:27':
                 screenshot_window.close()
 
+            # 若处于拖拽状态，则不断更新矩形的绘制
             if dragging:
                 graph.DeleteFigure(area)
                 x, y = position()
@@ -1502,17 +1521,21 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
                     line_color='red',
                 )
 
+        # 恢复主窗口
         self.main_window.UnHide()
 
     # 图片处理
     def image_process(self):
         im = Image.open("Area.png")
+        # 转成灰度图
         im = im.convert("L")
+        # 按指定方式处理图片
         im = threshold_ways[self.config['threshold_way']](im, self.config['threshold'])
         im.save('Area.png')
 
     # 截取矩形区域图片，进行图片处理，并进行文字识别
     def OCR_work(self):
+        # 取得指定区域的图片
         bbox = [
             self.x1,
             self.y1,
@@ -1522,11 +1545,14 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
         im = screenshot(region=bbox)
         im.save('Area.png')
 
+        # 界面显示图片
         self.image_process()
         self.main_window['image'].update('Area.png')
 
+        # 取得识别文本
         im = Image.open('Area.png')
         text_OCR = tesseract_OCR(im, languages[self.config['OCR_language']])
+
         if text_OCR != self.text:
             self.text_process(text_OCR)
 
@@ -1582,11 +1608,13 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
 
     def read_curr_text(self):
         flag = True
+        # 对于所有已启动TTS，则调用其阅读
         for speaker_name in self.TTS:
             speaker = self.TTS[speaker_name]
             if speaker.working:
                 speaker.read(self.text)
                 flag = False
+        # 若无已启动TTS，则选择第一种TTS启动
         if flag:
             for speaker_name in self.TTS:
                 default_speaker = self.TTS[speaker_name]
@@ -1624,6 +1652,7 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
                     ]
                     text_layout.append(layout)
 
+        # 若未选择任何文本栏，则放置一片区域，方便拖动和右键菜单
         if len(text_layout) == 0:
             blank = [
                 sg.Text('空白'),
@@ -1661,6 +1690,7 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
             right_click_menu=right_click_menu,
         )
 
+        # 最小化主窗口
         self.main_window.Minimize()
 
         prev_text = ''
@@ -1678,6 +1708,7 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
             elif event == 'read':
                 self.read_curr_text()
 
+            # 根据是否暂停，改变暂停按钮的文字
             if self.textractor_pause != prev_textractor_status:
                 prev_textractor_status = self.textractor_pause
                 if self.textractor_pause:
@@ -1699,6 +1730,7 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
                         else:
                             window[translator.key].update(self.text_translate[translator.label])
 
+        # 关闭浮动窗口并恢复主窗口
         self.float = False
         window.close()
         self.main_window.Normal()
