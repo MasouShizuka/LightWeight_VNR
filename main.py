@@ -1060,25 +1060,25 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
                 speaker = self.TTS[speaker_name]
                 speaker.update_config(self.config)
 
-            with open('config.json', 'w') as f:
+            with open('config.json', 'w', encoding='utf-8') as f:
                 json.dump(self.config, f, indent=4, ensure_ascii=False)
 
     # 读取设置
     def load_config(self):
         if os.path.exists('config.json'):
-            with open('config.json', 'r') as f:
+            with open('config.json', 'r', encoding='utf-8') as f:
                 config = json.load(f)
             self.config = config
 
     # 存储游戏信息
     def save_game(self):
-        with open('game.json', 'w') as f:
+        with open('game.json', 'w', encoding='utf-8') as f:
             json.dump(self.game, f, indent=4, ensure_ascii=False)
 
     # 读取游戏信息
     def load_game(self):
         if os.path.exists('game.json'):
-            with open('game.json', 'r') as f:
+            with open('game.json', 'r', encoding='utf-8') as f:
                 config = json.load(f)
             self.game = config
 
@@ -1121,11 +1121,7 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
         text = text.replace('\n', '')
 
         # 取得游戏窗口pid
-        pid = None
-        try:
-            pid = int(self.main_window['process'].get().split()[0])
-        except:
-            pass
+        pid = self.game['curr_game_id']
 
         # TTS阅读
         for speaker_name in self.TTS:
@@ -1617,8 +1613,7 @@ dll注入后，游戏进程不关，则再次打开程序只需启动TR即可，
         # 若无已启动TTS，则选择第一种TTS启动
         if flag:
             for speaker_name in self.TTS:
-                default_speaker = self.TTS[speaker_name]
-                default_speaker.start()
+                self.TTS[speaker_name].start()
                 break
 
     # 浮动按键函数

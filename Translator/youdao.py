@@ -1,8 +1,10 @@
 import os
 from time import sleep
-from pywinauto.application import Application
 from set_focus import set_focus
 from pyperclip import copy
+import sys
+sys.coinit_flags = 2
+from pywinauto.application import Application
 
 
 class Youdao(object):

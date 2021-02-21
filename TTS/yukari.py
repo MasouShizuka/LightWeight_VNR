@@ -1,8 +1,10 @@
 import os
 import win32gui
 import win32con
-from pywinauto.application import Application
 from pyperclip import copy
+import sys
+sys.coinit_flags = 2
+from pywinauto.application import Application
 # from set_focus import set_focus
 
 

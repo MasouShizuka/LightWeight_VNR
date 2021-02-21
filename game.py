@@ -31,7 +31,7 @@ def start_with_locale_emulator(locale_emulator_path, game_path, game_name):
     leproc_path = os.path.join(locale_emulator_path, 'LEProc.exe')
     try:
         Popen(
-            r'"' + leproc_path + r'"' + r' -run ' + r'"' + game_path + r'"',
+            r'"' + leproc_path + r'"' + r' "' + game_path + r'"',
             shell=True,
         )
         i = 0
