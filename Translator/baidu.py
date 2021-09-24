@@ -4,22 +4,18 @@ import urllib
 import random
 import json
 
+from Translator.translator import Translator
 
-class Baidu(object):
-    def __init__(self, **kw):
-        self.appid = kw['appid']
-        self.key = kw['key']
-        self.working = kw['working']
 
-        self.label = 'text_baidu_translate'
-        self.name = '百度'
-        self.key = 'text_baidu_translated'
+class Baidu(Translator):
+    label = 'baidu'
+    name = '百度'
+    key = 'text_baidu_translate'
 
-    def set_appid(self, appid):
-        self.appid = str(appid)
-
-    def set_key(self, key):
-        self.key = str(key)
+    def __init__(self, config):
+        self.working = config['baidu']
+        self.appid = config['baidu_appid']
+        self.key = config['baidu_key']
 
     def errorhandel(self, code):
         MAPPING = {
@@ -43,19 +39,19 @@ class Baidu(object):
         secretKey = self.key
         httpClient = None
         myurl = '/api/trans/vip/translate'
-        fromLang = 'auto'   #原文语种
-        toLang = 'zh'       #译文语种
+        fromLang = 'auto'  # 原文语种
+        toLang = 'zh'  # 译文语种
         salt = random.randint(32768, 65536)
         q = text
         sign = appid + q + str(salt) + secretKey
         sign = hashlib.md5(sign.encode()).hexdigest()
         myurl = myurl \
-                + '?appid=' + appid \
-                + '&q=' + urllib.parse.quote(q) \
-                + '&from=' + fromLang \
-                + '&to=' + toLang \
-                + '&salt=' + str(salt) \
-                + '&sign=' + sign
+            + '?appid=' + appid \
+            + '&q=' + urllib.parse.quote(q) \
+            + '&from=' + fromLang \
+            + '&to=' + toLang \
+            + '&salt=' + str(salt) \
+            + '&sign=' + sign
         try:
             httpClient = http.client.HTTPConnection('api.fanyi.baidu.com')
             httpClient.request('GET', myurl)
@@ -73,9 +69,6 @@ class Baidu(object):
                 httpClient.close()
 
     def update_config(self, config):
-        self.set_appid(config['baidu_appid'])
-        self.set_key(config['baidu_key'])
+        self.appid = config['baidu_appid']
+        self.key = config['baidu_key']
         self.working = config['baidu']
-    
-    def thread(self, text, text_translate, *args):
-        text_translate[self.label] = self.translate(text)

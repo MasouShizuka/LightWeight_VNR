@@ -1,3 +1,4 @@
+
 import sys
 sys.coinit_flags = 2
 import os
@@ -10,13 +11,13 @@ from pyperclip import copy
 from TTS.TTS import TTS
 
 
-# VOICEROID+ 结月缘
+# VOICEROID+ 民安ともえ
 # 已放流，且可解决激活问题，所以使用
-# 调用Yukari的方法借鉴了VNR中的源码
+# 调用Tamiyasu的方法借鉴了VNR中的源码
 
-class Yukari(TTS):
-    label = 'yukari'
-    name = '結月ゆかり'
+class Tamiyasu(TTS):
+    label = 'tamiyasu'
+    name = '弦卷マキ'
 
     MSG_CLICK = 0
     CMD_DELETE = 46
@@ -24,11 +25,11 @@ class Yukari(TTS):
 
     def __init__(self, config):
         self.working = False
-        self.constantly = config['yukari_constantly']
-        self.aside = config['yukari_aside']
-        self.character = config['yukari_character']
+        self.constantly = config['tamiyasu_constantly']
+        self.aside = config['tamiyasu_aside']
+        self.character = config['tamiyasu_character']
 
-        self.path = config['yukari_path']
+        self.path = config['tamiyasu_path']
         self.path_exe = os.path.join(self.path, 'VOICEROID.exe')
 
         self.app = None
@@ -89,8 +90,8 @@ class Yukari(TTS):
                 self.read(text)
 
     def update_config(self, config):
-        self.path = config['yukari_path']
+        self.path = config['tamiyasu_path']
         self.path_exe = os.path.join(self.path, 'VOICEROID.exe')
-        self.constantly = config['yukari_constantly']
-        self.aside = config['yukari_aside']
-        self.character = config['yukari_character']
+        self.constantly = config['tamiyasu_constantly']
+        self.aside = config['tamiyasu_aside']
+        self.character = config['tamiyasu_character']

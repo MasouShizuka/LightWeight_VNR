@@ -1,6 +1,8 @@
 import os
 from ctypes import *
 
+from Translator.translator import Translator
+
 DLL = 'JBJCT.dll'
 BUFFER_SIZE = 3000
 CODEPAGE_JA = 932
@@ -8,29 +10,22 @@ CODEPAGE_GB = 936
 CODEPAGE_BIG5 = 950
 
 jbeijing_to = {
-      '简体中文': CODEPAGE_GB,
-      '繁体中文': CODEPAGE_BIG5,
+    '简体中文': CODEPAGE_GB,
+    '繁体中文': CODEPAGE_BIG5,
 }
 jbeijing_translate = [i for i in jbeijing_to]
 
 
-class JBeijing(object):
-    def __init__(self, **kw):
-        self.path = kw['path']
+class JBeijing(Translator):
+    label = 'jbeijing'
+    name = '北京'
+    key = 'text_jbeijing_translate'
+
+    def __init__(self, config):
+        self.working = config['jbeijing']
+        self.path = config['jbeijing_path']
         self.path_dll = os.path.join(self.path, DLL)
-        self.to = jbeijing_to[kw['jbeijing_to']]
-        self.working = kw['working']
-
-        self.label = 'text_jbeijing_translate'
-        self.name = '北京'
-        self.key = 'text_jbeijing_translated'
-
-    def set_path(self, path):
-        self.path = path
-        self.path_dll = os.path.join(self.path, DLL)
-
-    def set_to(self, to):
-        self.to = to
+        self.to = jbeijing_to[config['jbeijing_to']]
 
     # 借鉴了VNR中调用JBeijing的方法
     def translate(self, text):
@@ -59,8 +54,7 @@ class JBeijing(object):
         return ''
 
     def update_config(self, config):
+        self.path = config['jbeijing_path']
+        self.path_dll = os.path.join(self.path, DLL)
         self.to = jbeijing_to[config['jbeijing_to']]
         self.working = config['jbeijing']
-    
-    def thread(self, text, text_translate, *args):
-        text_translate[self.label] = self.translate(text)

@@ -3,6 +3,7 @@ import os
 default_config = {
     # 界面相关
     'alpha': 1.0,
+    'top': False,
     'copy': False,
 
     # 游戏相关
@@ -35,14 +36,17 @@ default_config = {
     'yukari_constantly': False,
     'yukari_aside': True,
     'yukari_character': True,
+    'tamiyasu_path': os.path.abspath('.') + r'\Tamiyasu',
+    'tamiyasu_constantly': False,
+    'tamiyasu_aside': True,
+    'tamiyasu_character': True,
 
     # 文本相关
     'deduplication': 1,
     'deduplication_auto': False,
     'garbage_chars': '',
-    're': r'.*',
+    're': '',
 
     # 浮动窗口相关
-    'float_interval': 0.1,
-    'text_origin': True,
+    'floating_text_original': True,
 }
