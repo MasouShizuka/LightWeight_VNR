@@ -432,6 +432,8 @@ class Main_Window(object):
         if not self.game_pid:
             return None
 
+        sleep(1)
+
         # 启动Textractor
         self.textractor_start()
 
@@ -471,8 +473,8 @@ class Main_Window(object):
         game_process = None
 
         # 获取任务管理器中的应用列表的进程和pid
-        rule = re.compile('(\d+)\s+(.+)')
-        cmd = 'powershell "gps | where {$_.MainWindowTitle } | select Id, ProcessName'
+        rule = re.compile('(\d+)')
+        cmd = 'powershell "gps | where {$_.MainWindowTitle } | select Id'
         proc = Popen(cmd, shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE)
         for line in proc.stdout:
             try:
@@ -480,7 +482,7 @@ class Main_Window(object):
                 result = rule.match(line)
                 if result:
                     id = result.group(1)
-                    process_name = result.group(2)
+                    process_name = psutil.Process(int(id)).name()
                     process = id + ' - ' + process_name
 
                     if int(id) == self.game['curr_game_id'] and \
@@ -545,7 +547,7 @@ class Main_Window(object):
             stderr=PIPE,
             encoding='utf-16-le',
         )
-        rule = re.compile(r'^(\[.+?\])\s+(.+)$')
+        rule = re.compile(r'^(\[.+?\])\s(.+)$')
         hooks = {}
         for line in iter(self.cli.stdout.readline, ''):
             # 停止则跳出
@@ -569,6 +571,7 @@ class Main_Window(object):
                 self.main_window['textractor_hook'].update(values=list(hooks.values()))
 
                 # 将当前钩子修改为固定钩子，若未固定则读取界面钩子列表当前的钩子
+                curr_hook = None
                 if self.fixed_hook:
                     curr_hook = self.fixed_hook
                 else:
