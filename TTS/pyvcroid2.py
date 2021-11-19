@@ -161,6 +161,7 @@ class VcRoid2(object):
         language_path = c_char_p((self.__install_path_x86 + "\\Lang\\" + language_name).encode("shift-jis"))
         cd = os.getcwd()
         try:
+            windll.kernel32.SetDllDirectoryW(None)
             os.chdir(self.__install_path) # Change the current directory temporarily
             result = self.__dll.AITalkAPI_LangLoad(language_path)
         except Exception as e:
