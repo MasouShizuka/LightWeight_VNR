@@ -8,7 +8,7 @@ from OCR.threshold_ways import threshold_name
 from Translator.jbeijing import jbeijing_translate
 
 
-def UI(config, games):
+def UI(config, games=[], voiceroid2_list=[]):
     game_list = [
         [
             sg.Listbox(
@@ -222,7 +222,7 @@ def UI(config, games):
                         sg.Input(
                             key='youdao_interval',
                             default_text=config['youdao_interval'],
-                            size=(16, 1),
+                            size=(6, 1),
                         ),
                         sg.Text('秒'),
                     ],
@@ -384,6 +384,213 @@ def UI(config, games):
         ],
     ]
 
+    TTS_voiceroid2 = [
+        [
+            sg.Frame(
+                'VOICEROID2',
+                [
+                    [
+                        sg.Text('VOICEROID2：    '),
+                        sg.Checkbox(
+                            '启用',
+                            key='voiceroid2',
+                            default=config['voiceroid2'],
+                        )
+                    ],
+                    [
+                        sg.Text('VOICEROID2路径：'),
+                        sg.Input(
+                            key='voiceroid2_path',
+                            default_text=config['voiceroid2_path'],
+                            size=(50, 1),
+                        ),
+                        sg.FolderBrowse('目录', key='voiceroid2_dir'),
+                    ],
+                    [
+                        sg.Text('启用Voice：     '),
+                        sg.Combo(
+                            voiceroid2_list['voiceroid2_voice_list'],
+                            key='voiceroid2_voice_selected',
+                            default_value=voiceroid2_list['voiceroid2_voice_selected'],
+                            readonly=True,
+                            size=(50, 1),
+                        ),
+                    ],
+                    [
+                        sg.Frame(
+                            '参数设置',
+                            [
+                                [
+                                    sg.Column([
+                                        [
+                                            sg.Slider(
+                                                key='voiceroid2_master_volume',
+                                                default_value=config['voiceroid2_master_volume'],
+                                                font=('Microsoft YaHei Mono', 8),
+                                                orientation='v',
+                                                range=(0, 5.0),
+                                                resolution=0.01,
+                                                size=(10, 10),
+                                                tick_interval=1,
+                                            ),
+                                        ],
+                                        [
+                                            sg.Text('マスター音量', font=('Microsoft YaHei Mono', 8)),
+                                        ],
+                                    ], element_justification='right', pad=(15, 0)),
+                                    sg.Column([
+                                        [
+                                            sg.Slider(
+                                                key='voiceroid2_volume',
+                                                default_value=config['voiceroid2_volume'],
+                                                font=('Microsoft YaHei Mono', 8),
+                                                orientation='v',
+                                                range=(0, 2.0),
+                                                resolution=0.01,
+                                                size=(10, 10),
+                                                tick_interval=0.5,
+                                            ),
+                                        ],
+                                        [
+                                            sg.Text('音量', font=('Microsoft YaHei Mono', 8)),
+                                        ],
+                                    ], element_justification='right', pad=(15, 0)),
+                                    sg.Column([
+                                        [
+                                            sg.Slider(
+                                                key='voiceroid2_speed',
+                                                default_value=config['voiceroid2_speed'],
+                                                font=('Microsoft YaHei Mono', 8),
+                                                orientation='v',
+                                                range=(0.5, 4.0),
+                                                resolution=0.01,
+                                                size=(10, 10),
+                                                tick_interval=1.0,
+                                            ),
+                                        ],
+                                        [
+                                            sg.Text('話速', font=('Microsoft YaHei Mono', 8)),
+                                        ],
+                                    ], element_justification='right', pad=(15, 0)),
+                                    sg.Column([
+                                        [
+                                            sg.Slider(
+                                                key='voiceroid2_pitch',
+                                                default_value=config['voiceroid2_pitch'],
+                                                font=('Microsoft YaHei Mono', 8),
+                                                orientation='v',
+                                                range=(0.5, 2.0),
+                                                resolution=0.01,
+                                                size=(10, 10),
+                                                tick_interval=0.5,
+                                            ),
+                                        ],
+                                        [
+                                            sg.Text('高さ', font=('Microsoft YaHei Mono', 8)),
+                                        ],
+                                    ], element_justification='right', pad=(15, 0)),
+                                    sg.Column([
+                                        [
+                                            sg.Slider(
+                                                key='voiceroid2_emphasis',
+                                                default_value=config['voiceroid2_emphasis'],
+                                                font=('Microsoft YaHei Mono', 8),
+                                                orientation='v',
+                                                range=(0.5, 2.0),
+                                                resolution=0.01,
+                                                size=(10, 10),
+                                                tick_interval=0.5,
+                                            ),
+                                        ],
+                                        [
+                                            sg.Text('抑揚', font=('Microsoft YaHei Mono', 8)),
+                                        ],
+                                    ], element_justification='right', pad=(15, 0)),
+                                    sg.Column([
+                                        [
+                                            sg.Slider(
+                                                key='voiceroid2_pause_middle',
+                                                default_value=config['voiceroid2_pause_middle'],
+                                                font=('Microsoft YaHei Mono', 8),
+                                                orientation='v',
+                                                range=(80, 500),
+                                                resolution=1,
+                                                size=(10, 10),
+                                                tick_interval=100,
+                                            ),
+                                        ],
+                                        [
+                                            sg.Text('短ポーズ時間', font=('Microsoft YaHei Mono', 8)),
+                                        ],
+                                    ], element_justification='right', pad=(15, 0)),
+                                    sg.Column([
+                                        [
+                                            sg.Slider(
+                                                key='voiceroid2_pause_long',
+                                                default_value=config['voiceroid2_pause_long'],
+                                                font=('Microsoft YaHei Mono', 8),
+                                                orientation='v',
+                                                range=(100, 2000),
+                                                resolution=1,
+                                                size=(10, 10),
+                                                tick_interval=500,
+                                            ),
+                                        ],
+                                        [
+                                            sg.Text('長ポーズ時間', font=('Microsoft YaHei Mono', 8)),
+                                        ],
+                                    ], element_justification='right', pad=(15, 0)),
+                                    sg.Column([
+                                        [
+                                            sg.Slider(
+                                                key='voiceroid2_pause_sentence',
+                                                default_value=config['voiceroid2_pause_sentence'],
+                                                font=('Microsoft YaHei Mono', 8),
+                                                orientation='v',
+                                                range=(200, 10000),
+                                                resolution=1,
+                                                size=(10, 10),
+                                                tick_interval=2000,
+                                            ),
+                                        ],
+                                        [
+                                            sg.Text('文末ポーズ時間', font=('Microsoft YaHei Mono', 8)),
+                                        ],
+                                    ], element_justification='right', pad=(15, 0)),
+                                ],
+                                [
+                                    sg.Button('修改具体数值', key='voiceroid2_modify'),
+                                ],
+                            ], element_justification='center',
+                        ),
+                    ],
+                    [
+                        sg.Text('连续阅读：      '),
+                        sg.Checkbox(
+                            '启用',
+                            key='voiceroid2_constantly',
+                            default=config['voiceroid2_constantly'],
+                        )
+                    ],
+                    [
+                        sg.Text('阅读内容：      '),
+                        sg.Checkbox(
+                            '旁白',
+                            key='voiceroid2_aside',
+                            default=config['voiceroid2_aside'],
+                        ),
+                        sg.Checkbox(
+                            '角色',
+                            key='voiceroid2_character',
+                            default=config['voiceroid2_character'],
+                        ),
+                    ],
+                ],
+                pad=(10, 10),
+            ),
+        ],
+    ]
+
     TTS_layout = [
         [
             sg.Column(
@@ -394,6 +601,7 @@ def UI(config, games):
                                 [
                                     sg.Tab('Yukari', TTS_yukari),
                                     sg.Tab('Tamiyasu', TTS_tamiyasu),
+                                    sg.Tab('VOICEROID2', TTS_voiceroid2),
                                 ]
                             ],
                             tab_location='lefttop',
@@ -427,6 +635,7 @@ def UI(config, games):
                     ],
                 ],
                 pad=(10, 10),
+                size=(60, 10),
             ),
         ],
         [
@@ -502,7 +711,7 @@ def UI(config, games):
                             sg.Input(
                                 key='textractor_interval',
                                 default_text=config['textractor_interval'],
-                                size=(16, 1),
+                                size=(6, 1),
                             ),
                             sg.Text('秒'),
                         ],
@@ -527,7 +736,7 @@ def UI(config, games):
                         sg.FolderBrowse('目录', key='tesseract_OCR_dir'),
                     ],
                     [
-                        sg.Text('识别语言：'),
+                        sg.Text('识别语言：         '),
                         sg.Combo(
                             lang_translate,
                             key='OCR_language',
@@ -549,7 +758,7 @@ def UI(config, games):
                         sg.Input(
                             key='OCR_interval',
                             default_text=config['OCR_interval'],
-                            size=(16, 1),
+                            size=(6, 1),
                         ),
                         sg.Text('秒'),
                     ],
@@ -595,17 +804,31 @@ def UI(config, games):
                 '文本',
                 [
                     [
-                        sg.Text('文本去重数：'),
+                        sg.Text('文本去重数（aabbcc）：'),
                         sg.Input(
-                            key='deduplication',
-                            default_text=config['deduplication'],
-                            size=(16, 1),
+                            key='deduplication_aabbcc',
+                            default_text=config['deduplication_aabbcc'],
+                            size=(6, 1),
                         ),
                         sg.Text('    智能去重：'),
                         sg.Checkbox(
                             '启用',
-                            key='deduplication_auto',
-                            default=config['deduplication_auto'],
+                            key='deduplication_aabbcc_auto',
+                            default=config['deduplication_aabbcc_auto'],
+                        )
+                    ],
+                    [
+                        sg.Text('文本去重数（abcabc）：'),
+                        sg.Input(
+                            key='deduplication_abcabc',
+                            default_text=config['deduplication_abcabc'],
+                            size=(6, 1),
+                        ),
+                        sg.Text('    智能去重：'),
+                        sg.Checkbox(
+                            '启用',
+                            key='deduplication_abcabc_auto',
+                            default=config['deduplication_abcabc_auto'],
                         )
                     ],
                     [

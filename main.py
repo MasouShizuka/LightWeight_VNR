@@ -26,15 +26,14 @@ from Translator.baidu import Baidu
 
 from TTS.yukari import Yukari
 from TTS.tamiyasu import Tamiyasu
+from TTS.voiceroid2 import VOICEROID2
 
 sg.theme('DarkGrey5')
 sg.set_options(font=('Microsoft YaHei Mono', 15))
 
 
-class Main_Window(object):
+class Main_Window():
     def __init__(self):
-        # super().__init__()
-
         # 默认设置参数
         self.config = default_config
         # 读取设置
@@ -67,7 +66,7 @@ class Main_Window(object):
         # 文本相关变量
         self.text_unprocessed = ''
         self.text = ''
-        
+
         # JBeijing相关变量
         self.jbeijing = JBeijing(self.config)
         # 有道相关变量
@@ -85,10 +84,17 @@ class Main_Window(object):
         # TTS相关变量
         self.yukari = Yukari(self.config)
         self.tamiyasu = Tamiyasu(self.config)
+        self.voiceroid2 = VOICEROID2(self.config)
+
+        voiceroid2_list = {
+            'voiceroid2_voice_selected': self.voiceroid2.voice_selected,
+            'voiceroid2_voice_list': self.voiceroid2.voice_list,
+        }
 
         self.TTS = {
             self.yukari.label: self.yukari,
             self.tamiyasu.label: self.tamiyasu,
+            self.voiceroid2.label: self.voiceroid2,
         }
 
         # 浮动窗口相关变量
@@ -105,7 +111,7 @@ class Main_Window(object):
         # 主窗口
         self.main_window = sg.Window(
             'LightWeight_VNR',
-            UI(self.config, self.games),
+            UI(self.config, self.games, voiceroid2_list),
             alpha_channel=self.config['alpha'],
             keep_on_top=self.config['top'],
             margins=(0, 0),
@@ -166,6 +172,8 @@ class Main_Window(object):
                 self.tamiyasu_start()
             elif event == 'tamiyasu_stop':
                 self.TTS[self.tamiyasu.label].stop()
+            elif event == 'voiceroid2_modify':
+                self.voiceroid2_modify()
 
             # 设置界面
             elif event.startswith('save'):
@@ -176,21 +184,23 @@ class Main_Window(object):
                 self.floating()
 
         # 退出程序时，关闭所有打开的程序
-        for translator_name in self.translators:
-            translator = self.translators[translator_name]
-            if translator.working:
-                try:
-                    translator.stop()
-                except:
-                    pass
-        for speaker_name in self.TTS:
-            speaker = self.TTS[speaker_name]
-            if speaker.working:
-                try:
-                    speaker.stop()
-                except:
-                    pass
+        for translator_label in self.translators:
+            translator = self.translators[translator_label]
+            try:
+                translator.stop()
+            except:
+                pass
+        for speaker_label in self.TTS:
+            speaker = self.TTS[speaker_label]
+            try:
+                speaker.stop()
+            except:
+                pass
 
+        if os.path.exists('Screenshot.png'):
+            os.remove('Screenshot.png')
+        if os.path.exists('Area.png'):
+            os.remove('Area.png')
         # 关闭主窗口
         self.main_window.close()
 
@@ -198,35 +208,32 @@ class Main_Window(object):
     def save_config(self, values):
         confirm = sg.PopupYesNo('确认保存吗', title='确认', keep_on_top=True)
         if confirm == 'Yes':
-            for i in self.config:
-                # 更新界面透明度
-                if i == 'alpha':
-                    self.main_window.SetAlpha(values['alpha'])
-                # 更新界面置顶状态
-                if i == 'top':
-                    self.main_window.TKroot.wm_attributes("-topmost", values['top'])
-
-                # 间隔设置转成浮点数
-                if 'interval' in i:
-                    self.config[i] = float(values[i])
-                # 去重数设置转成整型
-                elif i == 'deduplication':
-                    self.config[i] = int(values[i])
-                else:
-                    self.config[i] = values[i]
+            for k, v in values.items():
+                if self.config.__contains__(k):
+                    # 更新界面透明度
+                    if k == 'alpha':
+                        self.main_window.SetAlpha(v)
+                    # 更新界面置顶状态
+                    elif k == 'top':
+                        self.main_window.TKroot.wm_attributes("-topmost", v)
+                    else:
+                        self.config[k] = v
 
             # 更新Tesseract_OCR路径
             pytesseract.pytesseract.tesseract_cmd = os.path.join(self.config['tesseract_OCR_path'], 'tesseract.exe')
 
             # 各种翻译器更新设置
-            for translator_name in self.translators:
-                translator = self.translators[translator_name]
+            for translator_label in self.translators:
+                translator = self.translators[translator_label]
                 translator.update_config(self.config)
 
             # 各种TTS更新设置
-            for speaker_name in self.TTS:
-                speaker = self.TTS[speaker_name]
-                speaker.update_config(self.config)
+            for speaker_label in self.TTS:
+                speaker = self.TTS[speaker_label]
+                speaker.update_config(self.config, self.main_window)
+
+                # if speaker_label == 'voiceroid2':
+                #     self.main_window['voiceroid2_voice_selected'].update(values=speaker.voice_list)
 
             with open('config.json', 'w', encoding='utf-8') as f:
                 json.dump(self.config, f, indent=4, ensure_ascii=False)
@@ -266,10 +273,12 @@ class Main_Window(object):
             return False
         self.text_unprocessed = text
 
-        # 文本去重
-        if self.config['deduplication_auto']:
+        # 文本去重，aabbcc -> abc
+        deduplication_aabbcc = int(self.config['deduplication_aabbcc'])
+        if self.config['deduplication_aabbcc_auto']:
+            l = len(text)
             i = 1
-            while i < len(text):
+            while i < l:
                 if text[i] == text[0]:
                     i += 1
                 else:
@@ -279,55 +288,76 @@ class Main_Window(object):
                 text_two = text[1::i]
                 if text_one == text_two:
                     text = text_one
-        else:
-            text = text[::int(self.config['deduplication'])]
+        elif deduplication_aabbcc > 1:
+            text = text[::deduplication_aabbcc]
+        # 文本去重，abcabc -> abc
+        deduplication_abcabc = int(self.config['deduplication_abcabc'])
+        if self.config['deduplication_abcabc_auto']:
+            l = len(text)
+            i = 2
+            while True:
+                n = int(l / i)
+                if n < 2:
+                    break
+                if l % i != 0:
+                    i += 1
+                    continue
+                text_one = text[:n]
+                flag = True
+                for k in range(1, i):
+                    if text[k * n: k * n + n] != text_one:
+                        flag = False
+                        break
+                if flag:
+                    text = text_one
+                    break
+                i += 1
+        elif deduplication_abcabc > 1:
+            text = text[:int(len(text) / deduplication_abcabc)]
 
         # 去除垃圾字符
-        for i in re.split(r'\s+', self.config['garbage_chars']):
-            text = text.replace(i, '')
+        garbage_chars = self.config['garbage_chars']
+        if len(garbage_chars) > 0:
+            for i in re.split(r'\s+', self.config['garbage_chars']):
+                text = text.replace(i, '')
 
         # 正则表达式，若规则匹配正确，则拼接各个()的内容
-        rule = re.compile(self.config['re'])
-        info = rule.match(text)
-        if info:
-            groups = info.groups()
-            if len(groups):
-                text = ''.join(groups)
-
-        if text == self.text:
-            return False
+        re_config = self.config['re']
+        if len(re_config) > 0:
+            rule = re.compile(re_config)
+            info = rule.match(text)
+            if info:
+                groups = info.groups()
+                if len(groups) > 0:
+                    text = ''.join(groups)
 
         self.text = text
-        
+
         # 复制处理后的原文
         if self.config['copy']:
             copy(text)
 
         # 传给翻译器的原文去除换行符
         text = text.replace('\n', '')
-        
+
         # 更新浮动窗口的原文
         if self.floating_working and self.config['floating_text_original']:
             self.floating_window['text_original'].update(text)
-        
+
         # 取得正在运行游戏的句柄
         if not self.game_hwnds:
             self.get_hwnds_for_pid()
 
         # TTS阅读
-        for speaker_name in self.TTS:
-            speaker = self.TTS[speaker_name]
+        for speaker_label in self.TTS:
+            speaker = self.TTS[speaker_label]
             if speaker.working and speaker.constantly:
-                thread = Thread(target=speaker.read_text, args=(text,))
-                try:
-                    thread.setDaemon(True)
-                    thread.start()
-                except:
-                    pass
+                thread = Thread(target=speaker.read_text, args=(text,), daemon=True)
+                thread.start()
 
         # 翻译器翻译
-        for translator_name in self.translators:
-            translator = self.translators[translator_name]
+        for translator_label in self.translators:
+            translator = self.translators[translator_label]
             if translator.working:
                 textarea = None
                 if self.floating_working and translator.get_translate:
@@ -336,13 +366,9 @@ class Main_Window(object):
                     textarea = self.main_window['textractor_text']
                 elif self.OCR_working:
                     textarea = self.main_window['OCR_text']
-                thread = Thread(target=translator.thread, args=(text, self.text_translate, self.floating_working, textarea, self.game_hwnds))
-                try:
-                    thread.setDaemon(True)
-                    thread.start()
-                except:
-                    pass
-        
+                thread = Thread(target=translator.thread, args=(text, self.text_translate, self.floating_working, textarea, self.game_hwnds), daemon=True)
+                thread.start()
+
         return True
 
     # 游戏列表点击函数
@@ -432,9 +458,8 @@ class Main_Window(object):
         if not self.game_pid:
             return None
 
-        sleep(1)
-
         # 启动Textractor
+        sleep(1)
         self.textractor_start()
 
         # 更新当前游戏信息
@@ -456,7 +481,7 @@ class Main_Window(object):
     def get_hwnds_for_pid(self):
         if not self.game_pid:
             return
-        
+
         def callback(hwnd, hwnds):
             if win32gui.IsWindowVisible(hwnd) and win32gui.IsWindowEnabled(hwnd):
                 _, found_pid = win32process.GetWindowThreadProcessId(hwnd)
@@ -496,7 +521,7 @@ class Main_Window(object):
         self.main_window['textractor_process'].update(values=processes)
         if game_process:
             self.main_window['textractor_process'].update(game_process)
-            
+
     # 固定钩子
     def textractor_fix_hook(self):
         rule = re.compile(r'^(\[.+?\])\s+(.+)$')
@@ -519,8 +544,7 @@ class Main_Window(object):
         self.textractor_refresh_process_list()
 
         self.textractor_working = True
-        textractor_thread = Thread(target=self.textractor_work)
-        textractor_thread.setDaemon(True)
+        textractor_thread = Thread(target=self.textractor_work, daemon=True)
         textractor_thread.start()
 
     # 终止按钮函数
@@ -562,7 +586,7 @@ class Main_Window(object):
             if content:
                 hook = content.group(1)
                 text = content.group(2)
-                
+
                 if hooks.__contains__(hook) and hooks[hook] == line:
                     continue
 
@@ -588,7 +612,7 @@ class Main_Window(object):
                             self.main_window['textractor_text'].update(hook, append=True)
                             self.main_window['textractor_text'].update('\n\n' + self.text + '\n\n', append=True)
 
-            sleep(self.config['textractor_interval'])
+            sleep(float(self.config['textractor_interval']))
 
     def attach(self, pid):
         self.cli.stdin.write('attach -P' + str(pid) + '\n')
@@ -601,7 +625,7 @@ class Main_Window(object):
             return
 
         pid = self.main_window['textractor_process'].get().split()
-        if not len(pid):
+        if len(pid) == 0 or not pid[0].isdigit():
             sg.Popup('提示', '进程栏缺少进程id', keep_on_top=True)
             return
 
@@ -793,13 +817,12 @@ class Main_Window(object):
         while self.OCR_working:
             if not self.OCR_pause:
                 self.OCR_work()
-            sleep(self.config['OCR_interval'])
+            sleep(float(self.config['OCR_interval']))
 
     # 连续按钮函数
     def OCR_start(self):
         self.OCR_working = True
-        OCR_thread = Thread(target=self.OCR_thread)
-        OCR_thread.setDaemon(True)
+        OCR_thread = Thread(target=self.OCR_thread, daemon=True)
         OCR_thread.start()
 
     # 结束按钮函数
@@ -810,13 +833,13 @@ class Main_Window(object):
     def pause_or_resume(self):
         if self.textractor_working:
             self.textractor_pause = not self.textractor_pause
-            
+
             button = None
             if self.floating_working:
                 button = self.floating_window['pause']
             else:
                 button = self.main_window['textractor_pause']
-                
+
             if self.textractor_pause:
                 button.update('继续')
             else:
@@ -849,8 +872,8 @@ class Main_Window(object):
         if not os.path.exists(yukari_path):
             sg.Popup('提示', 'Yukari路径不正确', keep_on_top=True)
         else:
-           self.TTS[self.yukari.label].start()
-            
+            self.TTS[self.yukari.label].start()
+
     # tamiyasu启动按钮函数
     def tamiyasu_start(self):
         tamiyasu_path = os.path.join(self.config['tamiyasu_path'], 'VOICEROID.exe')
@@ -859,15 +882,120 @@ class Main_Window(object):
         else:
             self.TTS[self.tamiyasu.label].start()
 
+    # VOICEROID2修改具体数值按钮函数
+    def voiceroid2_modify(self):
+        layout = [
+            [
+                sg.Column(
+                    [
+                        [sg.Text('マスター音量：')],
+                        [sg.Text('音量：')],
+                        [sg.Text('話速：')],
+                        [sg.Text('高さ：')],
+                        [sg.Text('抑揚：')],
+                        [sg.Text('短ポーズ時間：')],
+                        [sg.Text('長ポーズ時間：')],
+                        [sg.Text('文末ポーズ時間：')],
+                    ],
+                    element_justification='right'
+                ),
+                sg.Column(
+                    [
+                        [
+                            sg.Input(
+                                key='voiceroid2_master_volume',
+                                default_text=str(self.config['voiceroid2_master_volume']),
+                                size=(10, 1),
+                            ),
+                        ],
+                        [
+                            sg.Input(
+                                key='voiceroid2_volume',
+                                default_text=str(self.config['voiceroid2_volume']),
+                                size=(10, 1),
+                            ),
+                        ],
+                        [
+                            sg.Input(
+                                key='voiceroid2_speed',
+                                default_text=str(self.config['voiceroid2_speed']),
+                                size=(10, 1),
+                            ),
+                        ],
+                        [
+                            sg.Input(
+                                key='voiceroid2_pitch',
+                                default_text=str(self.config['voiceroid2_pitch']),
+                                size=(10, 1),
+                            ),
+                        ],
+                        [
+                            sg.Input(
+                                key='voiceroid2_emphasis',
+                                default_text=str(self.config['voiceroid2_emphasis']),
+                                size=(10, 1),
+                            ),
+                        ],
+                        [
+                            sg.Input(
+                                key='voiceroid2_pause_middle',
+                                default_text=str(self.config['voiceroid2_pause_middle']),
+                                size=(10, 1),
+                            ),
+                        ],
+                        [
+                            sg.Input(
+                                key='voiceroid2_pause_long',
+                                default_text=str(self.config['voiceroid2_pause_long']),
+                                size=(10, 1),
+                            ),
+                        ],
+                        [
+                            sg.Input(
+                                key='voiceroid2_pause_sentence',
+                                default_text=str(self.config['voiceroid2_pause_sentence']),
+                                size=(10, 1),
+                            ),
+                        ],
+                    ],
+                ),
+            ],
+            [sg.Button('保存')],
+        ]
+
+        window = sg.Window(
+            'VOICEROID2修改具体数值',
+            layout,
+            alpha_channel=self.config['alpha'],
+            element_justification='center',
+            keep_on_top=True,
+        )
+
+        while True:
+            event, values = window.read()
+            if event is None:
+                break
+
+            elif event == '保存':
+                for k, v in values.items():
+                    value = float(window[k].get())
+                    values[k] = value
+                    self.main_window[k].update(value)
+                self.save_config(values)
+
+        window.close()
+
     def read_curr_text(self):
         text = self.text.replace('\n', '')
 
         flag = True
         # 对于所有已启动TTS，则调用其阅读
-        for speaker_name in self.TTS:
-            speaker = self.TTS[speaker_name]
+        for speaker_label in self.TTS:
+            speaker = self.TTS[speaker_label]
             if speaker.working:
-                speaker.read(text)
+                thread = Thread(target=speaker.read, args=(text,), daemon=True)
+                thread.start()
+
                 flag = False
         if flag:
             sg.Popup('提示', '请先启动TTS', keep_on_top=True)
@@ -886,8 +1014,8 @@ class Main_Window(object):
                 ),
             ]
             text_layout.append(floating_text_original)
-        for translator_name in self.translators:
-            translator = self.translators[translator_name]
+        for translator_label in self.translators:
+            translator = self.translators[translator_label]
             if translator.working:
                 if translator.name == '有道' and not translator.get_translate:
                     pass
@@ -959,7 +1087,7 @@ class Main_Window(object):
         self.floating_window.close()
         self.floating_window = None
         self.floating_working = False
-        
+
         status = '继续' if self.textractor_pause else '暂停'
         if self.textractor_working:
             self.main_window['textractor_pause'].update(status)
@@ -970,10 +1098,3 @@ class Main_Window(object):
 
 if __name__ == '__main__':
     Main_Window()
-
-    if os.path.exists('Screenshot.png'):
-        os.remove('Screenshot.png')
-    if os.path.exists('Area.png'):
-        os.remove('Area.png')
-    if os.path.exists('GPS.txt'):
-        os.remove('GPS.txt')

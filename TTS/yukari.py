@@ -11,7 +11,6 @@ from TTS.TTS import TTS
 
 
 # VOICEROID+ 结月缘
-# 已放流，且可解决激活问题，所以使用
 # 调用Yukari的方法借鉴了VNR中的源码
 
 class Yukari(TTS):
@@ -24,18 +23,21 @@ class Yukari(TTS):
 
     def __init__(self, config):
         self.working = False
-        self.constantly = config['yukari_constantly']
-        self.aside = config['yukari_aside']
-        self.character = config['yukari_character']
-
-        self.path = config['yukari_path']
-        self.path_exe = os.path.join(self.path, 'VOICEROID.exe')
+        self.update_config(config)
 
         self.app = None
         self.win = None
         self.edit = None
         self.play_button = None
         self.stop_button = None
+
+    def update_config(self, config, main_window=None):
+        self.constantly = config['yukari_constantly']
+        self.aside = config['yukari_aside']
+        self.character = config['yukari_character']
+
+        self.path = config['yukari_path']
+        self.path_exe = os.path.join(self.path, 'VOICEROID.exe')
 
     def start(self):
         self.stop()
@@ -76,21 +78,3 @@ class Yukari(TTS):
             win32gui.PostMessage(self.play_button, self.MSG_CLICK, 0, 0)
         except:
             pass
-
-    def read_text(self, text):
-        if '「' in text or \
-           '『' in text or \
-           '（' in text or \
-           '(' in text:
-            if self.character:
-                self.read(text)
-        else:
-            if self.aside:
-                self.read(text)
-
-    def update_config(self, config):
-        self.path = config['yukari_path']
-        self.path_exe = os.path.join(self.path, 'VOICEROID.exe')
-        self.constantly = config['yukari_constantly']
-        self.aside = config['yukari_aside']
-        self.character = config['yukari_character']

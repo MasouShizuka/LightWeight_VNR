@@ -1,4 +1,4 @@
-class TTS(object):
+class TTS():
     label = None
     name = None
 
@@ -7,11 +7,19 @@ class TTS(object):
     aside = None
     character = None
 
+    def update_config(self, config, main_window=None):
+        pass
+
     def read(self, text):
         pass
 
     def read_text(self, text):
-        pass
-
-    def update_config(self, config):
-        pass
+        if '「' in text or \
+           '『' in text or \
+           '（' in text or \
+           '(' in text:
+            if self.character:
+                self.read(text)
+        else:
+            if self.aside:
+                self.read(text)

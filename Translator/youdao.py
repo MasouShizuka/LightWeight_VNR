@@ -17,15 +17,19 @@ class Youdao(Translator):
 
     def __init__(self, config):
         self.working = False
-        self.get_translate = config['youdao_get_translate']
-        self.path = config['youdao_path']
-        self.path_exe = os.path.join(self.path, 'YoudaoDict.exe')
-        self.interval = config['youdao_interval']
+        self.update_config(config)
 
         self.app = None
         self.win = None
         self.edit_original = None
         self.edit_translate = None
+
+    def update_config(self, config):
+        self.get_translate = config['youdao_get_translate']
+
+        self.path = config['youdao_path']
+        self.path_exe = os.path.join(self.path, 'YoudaoDict.exe')
+        self.interval = config['youdao_interval']
 
     def start(self):
         self.stop()
@@ -82,22 +86,16 @@ class Youdao(Translator):
         text_translate[self.label] = self.translate(text, hwnds=hwnds)
 
         if self.get_translate:
-            # 更新界面中对应翻译的文本
-            if not is_floating:
-                textarea.update(
-                    self.name + ':\n' +
-                    text_translate[self.label] + '\n\n',
-                    append=True,
-                )
-            else:
-            # 更新浮动窗口中对应翻译的文本
-                try:
+            try:
+                # 更新界面中对应翻译的文本
+                if not is_floating:
+                    textarea.update(
+                        self.name + ':\n' +
+                        text_translate[self.label] + '\n\n',
+                        append=True,
+                    )
+                else:
+                # 更新浮动窗口中对应翻译的文本
                     textarea.update(text_translate[self.label])
-                except:
-                    pass
-
-    def update_config(self, config):
-        self.path = config['youdao_path']
-        self.path_exe = os.path.join(self.path, 'YoudaoDict.exe')
-        self.interval = config['youdao_interval']
-        self.get_translate = config['youdao_get_translate']
+            except:
+                pass

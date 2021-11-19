@@ -13,7 +13,11 @@ class Baidu(Translator):
     key = 'text_baidu_translate'
 
     def __init__(self, config):
+        self.update_config(config)
+
+    def update_config(self, config):
         self.working = config['baidu']
+
         self.appid = config['baidu_appid']
         self.key = config['baidu_key']
 
@@ -67,8 +71,3 @@ class Baidu(Translator):
         finally:
             if httpClient:
                 httpClient.close()
-
-    def update_config(self, config):
-        self.appid = config['baidu_appid']
-        self.key = config['baidu_key']
-        self.working = config['baidu']

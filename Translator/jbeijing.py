@@ -22,7 +22,11 @@ class JBeijing(Translator):
     key = 'text_jbeijing_translate'
 
     def __init__(self, config):
+        self.update_config(config)
+
+    def update_config(self, config):
         self.working = config['jbeijing']
+
         self.path = config['jbeijing_path']
         self.path_dll = os.path.join(self.path, DLL)
         self.to = jbeijing_to[config['jbeijing_to']]
@@ -53,8 +57,6 @@ class JBeijing(Translator):
             pass
         return ''
 
-    def update_config(self, config):
-        self.path = config['jbeijing_path']
-        self.path_dll = os.path.join(self.path, DLL)
-        self.to = jbeijing_to[config['jbeijing_to']]
-        self.working = config['jbeijing']
+    def stop(self):
+        if os.path.exists('GPS.txt'):
+            os.remove('GPS.txt')
