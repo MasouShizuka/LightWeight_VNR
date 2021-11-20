@@ -11,7 +11,7 @@ from subprocess import Popen, PIPE
 from PIL import Image
 from pyautogui import position, screenshot, size
 from pyperclip import copy
-from pyhk import pyhk
+from keyboard import add_hotkey
 
 from UI import UI
 from config import default_config
@@ -104,9 +104,8 @@ class Main_Window():
         # 添加快捷键
         # ; -> 暂停
         # ' -> 阅读当前文本
-        hot = pyhk()
-        hot.addHotkey(['Oem_1'], self.pause_or_resume)
-        hot.addHotkey(['Oem_7'], self.read_curr_text)
+        add_hotkey(';', self.pause_or_resume)
+        add_hotkey('\'', self.read_curr_text)
 
         # 主窗口
         self.main_window = sg.Window(
@@ -478,6 +477,7 @@ class Main_Window():
             sleep(1)
             self.hook_code(self.game_pid, hook_code)
 
+    # 取得游戏窗口的句柄
     def get_hwnds_for_pid(self):
         if not self.game_pid:
             return

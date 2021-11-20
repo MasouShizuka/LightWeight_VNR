@@ -44,7 +44,7 @@ default_config = {
     'voiceroid2_constantly': False,
     'voiceroid2_aside': True,
     'voiceroid2_character': True,
-    'voiceroid2_path': os.path.join(os.path.abspath('.'), 'Yukari'),
+    'voiceroid2_path': os.path.join(os.path.abspath('.'), 'VOICEROID2'),
     'voiceroid2_voice_selected': '',
     'voiceroid2_master_volume': 1.0,
     'voiceroid2_volume': 1.0,

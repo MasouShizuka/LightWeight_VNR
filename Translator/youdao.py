@@ -71,7 +71,7 @@ class Youdao(Translator):
                 if not self.edit_translate:
                     self.edit_translate = self.win.children()[5]
 
-                sleep(self.interval)
+                sleep(float(self.interval))
                 text_translate = ''
                 for i in self.edit_translate.children():
                     text_translate += i.get_line(0)
