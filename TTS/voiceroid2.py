@@ -67,7 +67,14 @@ class VOICEROID2(TTS):
         except:
             pass
 
+    def text_process(self, text):
+        # 包含以下字符会使得无法阅读，因此去除
+        text = text.replace('～', ' ')
+
+        return text
+
     def read(self, text):
+        text = self.text_process(text)
         try:
             speech, tts_events = self.vc.textToSpeech(text)
             with open('audio.wav', 'wb') as f:

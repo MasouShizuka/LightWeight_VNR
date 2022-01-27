@@ -231,9 +231,6 @@ class Main_Window():
                 speaker = self.TTS[speaker_label]
                 speaker.update_config(self.config, self.main_window)
 
-                # if speaker_label == 'voiceroid2':
-                #     self.main_window['voiceroid2_voice_selected'].update(values=speaker.voice_list)
-
             with open('config.json', 'w', encoding='utf-8') as f:
                 json.dump(self.config, f, indent=4, ensure_ascii=False)
 
