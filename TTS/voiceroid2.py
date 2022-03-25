@@ -14,7 +14,7 @@ class VOICEROID2(TTS):
     def __init__(self, config):
         self.update_config(config)
 
-    def update_config(self, config, main_window=None):
+    def update_config(self, config, main_window=None, **kw):
         self.working = config['voiceroid2']
         self.constantly = config['voiceroid2_constantly']
         self.aside = config['voiceroid2_aside']
@@ -68,8 +68,10 @@ class VOICEROID2(TTS):
             pass
 
     def text_process(self, text):
-        # 包含以下字符会使得无法阅读，因此去除
+        # 包含以下字符会影响音频生成，因此去除
         text = text.replace('～', ' ')
+        text = text.replace('。', ' ')
+        text = text.replace('？', ' ')
 
         return text
 

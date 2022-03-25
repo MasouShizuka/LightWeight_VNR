@@ -1,10 +1,7 @@
-import sys
-sys.coinit_flags = 2
 import os
-import win32con
-import win32gui
 
 from pywinauto.application import Application
+from pywinauto import win32defines
 from pyperclip import copy
 
 from TTS.TTS import TTS
@@ -31,7 +28,7 @@ class Tamiyasu(TTS):
         self.play_button = None
         self.stop_button = None
 
-    def update_config(self, config, main_window=None):
+    def update_config(self, config, **kw):
         self.constantly = config['tamiyasu_constantly']
         self.aside = config['tamiyasu_aside']
         self.character = config['tamiyasu_character']
@@ -60,21 +57,21 @@ class Tamiyasu(TTS):
             pass
         self.working = False
 
-    def set_text(self, hwnd, text):
-        win32gui.SendMessage(hwnd, win32con.WM_COMMAND, self.CMD_DELETE, 0)
+    def set_text(self, widget, text):
+        widget.send_message(win32defines.WM_COMMAND, self.CMD_DELETE, 0)
         copy(text)
-        win32gui.SendMessage(hwnd, win32con.WM_COMMAND, self.CMD_PASTE, 0)
+        widget.send_message(win32defines.WM_COMMAND, self.CMD_PASTE, 0)
 
     def read(self, text):
         try:
             if not self.win:
                 self.win = self.app.top_window()
-                self.edit = self.win.handle
-                self.play_button = self.win.Button5.handle
-                self.stop_button = self.win.Button4.handle
+                self.edit = self.win
+                self.play_button = self.win.Button5
+                self.stop_button = self.win.Button4
 
-            win32gui.PostMessage(self.stop_button, self.MSG_CLICK, 0, 0)
+            self.stop_button.post_message(self.MSG_CLICK, 0, 0)
             self.set_text(self.edit, text)
-            win32gui.PostMessage(self.play_button, self.MSG_CLICK, 0, 0)
+            self.play_button.post_message(self.MSG_CLICK, 0, 0)
         except:
             pass

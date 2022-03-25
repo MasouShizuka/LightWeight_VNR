@@ -7,7 +7,7 @@ class TTS():
     aside = None
     character = None
 
-    def update_config(self, config, main_window=None):
+    def update_config(self, config, **kw):
         pass
 
     def read(self, text):

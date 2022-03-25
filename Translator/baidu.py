@@ -38,7 +38,7 @@ class Baidu(Translator):
             print(e)
             return "未知错误"
 
-    def translate(self, text):
+    def translate(self, text, **kw):
         appid = self.appid
         secretKey = self.key
         httpClient = None

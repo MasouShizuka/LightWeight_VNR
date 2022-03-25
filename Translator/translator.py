@@ -9,11 +9,11 @@ class Translator():
     def update_config(self, config):
         pass
 
-    def translate(self, text):
+    def translate(self, text, **kw):
         pass
 
-    def thread(self, text, text_translate, is_floating, textarea, *args):
-        text_translate[self.label] = self.translate(text)
+    def thread(self, text, text_translate, is_floating, textarea, game_focus):
+        text_translate[self.label] = self.translate(text, game_focus=game_focus)
 
         if self.get_translate:
             try:

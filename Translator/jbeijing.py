@@ -32,7 +32,7 @@ class JBeijing(Translator):
         self.to = jbeijing_to[config['jbeijing_to']]
 
     # 借鉴了VNR中调用JBeijing的方法
-    def translate(self, text):
+    def translate(self, text, **kw):
         if not os.path.exists(self.path) or \
            not os.path.exists(self.path_dll):
             return ''

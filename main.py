@@ -1,17 +1,17 @@
-import PySimpleGUI as sg
 import os
 import re
 import json
-import psutil
-import win32gui
-import win32process
 from threading import Thread
 from time import sleep
 from subprocess import Popen, PIPE
+
+import PySimpleGUI as sg
+import psutil
 from PIL import Image
 from pyautogui import position, screenshot, size
+from pynput import keyboard
 from pyperclip import copy
-from keyboard import add_hotkey
+from pywinauto.application import Application
 
 from UI import UI
 from config import default_config
@@ -42,7 +42,7 @@ class Main_Window():
         # 默认游戏信息
         self.game = game_info
         self.game_pid = None
-        self.game_hwnds = None
+        self.game_window = None
         # 读取游戏信息
         self.load_game()
         self.games = [i['name'] for i in self.game['game_list']]
@@ -102,10 +102,8 @@ class Main_Window():
         self.floating_window = None
 
         # 添加快捷键
-        # ; -> 暂停
-        # ' -> 阅读当前文本
-        add_hotkey(';', self.pause_or_resume)
-        add_hotkey('\'', self.read_curr_text)
+        listener = keyboard.Listener(on_press=self.on_press)
+        listener.start()
 
         # 主窗口
         self.main_window = sg.Window(
@@ -200,6 +198,7 @@ class Main_Window():
             os.remove('Screenshot.png')
         if os.path.exists('Area.png'):
             os.remove('Area.png')
+
         # 关闭主窗口
         self.main_window.close()
 
@@ -229,7 +228,7 @@ class Main_Window():
             # 各种TTS更新设置
             for speaker_label in self.TTS:
                 speaker = self.TTS[speaker_label]
-                speaker.update_config(self.config, self.main_window)
+                speaker.update_config(self.config, main_window=self.main_window)
 
             with open('config.json', 'w', encoding='utf-8') as f:
                 json.dump(self.config, f, indent=4, ensure_ascii=False)
@@ -340,10 +339,6 @@ class Main_Window():
         if self.floating_working and self.config['floating_text_original']:
             self.floating_window['text_original'].update(text)
 
-        # 取得正在运行游戏的句柄
-        if not self.game_hwnds:
-            self.get_hwnds_for_pid()
-
         # TTS阅读
         for speaker_label in self.TTS:
             speaker = self.TTS[speaker_label]
@@ -362,7 +357,7 @@ class Main_Window():
                     textarea = self.main_window['textractor_text']
                 elif self.OCR_working:
                     textarea = self.main_window['OCR_text']
-                thread = Thread(target=translator.thread, args=(text, self.text_translate, self.floating_working, textarea, self.game_hwnds), daemon=True)
+                thread = Thread(target=translator.thread, args=(text, self.text_translate, self.floating_working, textarea, self.game_focus), daemon=True)
                 thread.start()
 
         return True
@@ -454,6 +449,9 @@ class Main_Window():
         if not self.game_pid:
             return None
 
+        app = Application(backend='uia').connect(process=self.game_pid)
+        self.game_window = app.top_window()
+
         # 启动Textractor
         sleep(1)
         self.textractor_start()
@@ -474,20 +472,13 @@ class Main_Window():
             sleep(1)
             self.hook_code(self.game_pid, hook_code)
 
-    # 取得游戏窗口的句柄
-    def get_hwnds_for_pid(self):
-        if not self.game_pid:
-            return
-
-        def callback(hwnd, hwnds):
-            if win32gui.IsWindowVisible(hwnd) and win32gui.IsWindowEnabled(hwnd):
-                _, found_pid = win32process.GetWindowThreadProcessId(hwnd)
-                if self.game_pid and found_pid == self.game_pid:
-                    hwnds.append(hwnd)
-                return True
-
-        self.game_hwnds = []
-        win32gui.EnumWindows(callback, self.game_hwnds)
+    def game_focus(self):
+        if self.game_window is None:
+            if self.game_pid:
+                app = Application(backend='uia').connect(process=self.game_pid)
+                self.game_window = app.top_window()
+        if self.game_window:
+            self.game_window.set_focus()
 
     # 刷新按钮函数
     def textractor_refresh_process_list(self):
@@ -996,6 +987,18 @@ class Main_Window():
                 flag = False
         if flag:
             sg.Popup('提示', '请先启动TTS', keep_on_top=True)
+
+    def on_press(self, key):
+        # ; -> 暂停
+        # ' -> 阅读当前文本
+        try:
+            k = key.char
+            if k == ';':
+                self.pause_or_resume()
+            elif k == '\'':
+                self.read_curr_text()
+        except:
+            pass
 
     # 浮动按键函数
     def floating(self):
