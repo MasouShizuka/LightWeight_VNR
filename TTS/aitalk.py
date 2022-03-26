@@ -1,6 +1,7 @@
 from ctypes import *
 from enum import Enum, IntEnum, IntFlag
 
+
 class EventReasonCode(Enum):
     TEXTBUF_FULL = 101
     TEXTBUF_FLUSH = 102
@@ -11,6 +12,7 @@ class EventReasonCode(Enum):
     PH_LABEL = 301
     BOOKMARK = 302
     AUTO_BOOKMARK = 303
+
 
 class ResultCode(Enum):
     SUCCESS = 0
@@ -39,11 +41,13 @@ class ResultCode(Enum):
     USERDIC_LOCKED = -1011
     USERDIC_NOENTRY = -1012
 
+
 class StatusCode(Enum):
     WRONG_STATE = -1
     INPROGRESS = 10
     STILL_RUNNING = 11
     DONE = 12
+
 
 class JobInOut(IntEnum):
     PLAIN_TO_WAVE = 11
@@ -52,10 +56,12 @@ class JobInOut(IntEnum):
     PLAIN_TO_AIKANA = 21
     AIKANA_TO_JEITA = 32
 
+
 class ExtendFormat(IntFlag):
     NONE = 0
     JEITA_RUBY = 1
     AUTO_BOOKMARK = 16
+
 
 class TConfig(Structure):
     _fields_ = [
@@ -64,19 +70,19 @@ class TConfig(Structure):
         ("msecTimeout", c_uint32),
         ("pathLicense", c_char_p),
         ("codeAuthSeed", c_char_p),
-        ("__reserved__", c_uint32)
+        ("__reserved__", c_uint32),
     ]
     _pack_ = 1
 
+
 class TJobParam(Structure):
-    _fields_ = [
-        ("modeInOut", c_uint32),
-        ("userData", c_void_p)
-    ]
+    _fields_ = [("modeInOut", c_uint32), ("userData", c_void_p)]
     _pack_ = 1
+
 
 MAX_VOICENAME = 80
 MAX_JEITACONTROL = 12
+
 
 class TJeitaParam(Structure):
     _fields_ = [
@@ -85,9 +91,10 @@ class TJeitaParam(Structure):
         ("pauseMiddle", c_int32),
         ("pauseLong", c_int32),
         ("pauseSentence", c_int32),
-        ("control", c_char * MAX_JEITACONTROL)
+        ("control", c_char * MAX_JEITACONTROL),
     ]
     _pack_ = 1
+
 
 class TSpeakerParam(Structure):
     _fields_ = [
@@ -99,13 +106,15 @@ class TSpeakerParam(Structure):
         ("pauseMiddle", c_int32),
         ("pauseLong", c_int32),
         ("pauseSentence", c_int32),
-        ("styleRate", c_char * MAX_VOICENAME)
+        ("styleRate", c_char * MAX_VOICENAME),
     ]
     _pack_ = 1
+
 
 ProcTextBuf = WINFUNCTYPE(c_int32, c_int32, c_int32, c_void_p)
 ProcRawBuf = WINFUNCTYPE(c_int32, c_int32, c_int32, c_uint64, c_void_p)
 ProcEventTts = WINFUNCTYPE(c_int32, c_int32, c_int32, c_uint64, c_char_p, c_void_p)
+
 
 def createTtsParam(speaker_count):
     class TTtsParam(Structure):
@@ -124,7 +133,8 @@ def createTtsParam(speaker_count):
             ("jeita", TJeitaParam),
             ("numSpeakers", c_uint32),
             ("__reserved__", c_int32),
-            ("speaker", TSpeakerParam * speaker_count)
+            ("speaker", TSpeakerParam * speaker_count),
         ]
         _pack_ = 1
+
     return TTtsParam

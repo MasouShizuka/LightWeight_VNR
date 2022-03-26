@@ -1,4 +1,4 @@
-class Translator():
+class Translator:
     label = None
     name = None
     key = None
@@ -20,8 +20,7 @@ class Translator():
                 # 更新界面中对应翻译的文本
                 if not is_floating:
                     textarea.update(
-                        self.name + ':\n' +
-                        text_translate[self.label] + '\n\n',
+                        self.name + '：\n' + text_translate[self.label] + '\n\n',
                         append=True,
                     )
                 # 更新浮动窗口中对应翻译的文本

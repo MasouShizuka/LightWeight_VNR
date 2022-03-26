@@ -10,6 +10,7 @@ from TTS.TTS import TTS
 # VOICEROID+ 民安ともえ
 # 调用Tamiyasu的方法借鉴了VNR中的源码
 
+
 class Tamiyasu(TTS):
     label = 'tamiyasu'
     name = '弦卷マキ'
@@ -41,7 +42,9 @@ class Tamiyasu(TTS):
 
         if os.path.exists(self.path):
             try:
-                self.app = Application().start(self.path_exe, work_dir=self.path, timeout=10)
+                self.app = Application().start(
+                    self.path_exe, work_dir=self.path, timeout=10
+                )
                 self.working = True
             except:
                 pass

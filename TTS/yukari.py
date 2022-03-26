@@ -10,6 +10,7 @@ from TTS.TTS import TTS
 # VOICEROID+ 结月缘
 # 调用Yukari的方法借鉴了VNR中的源码
 
+
 class Yukari(TTS):
     label = 'yukari'
     name = '結月ゆかり'
@@ -41,7 +42,9 @@ class Yukari(TTS):
 
         if os.path.exists(self.path):
             try:
-                self.app = Application().start(self.path_exe, work_dir=self.path, timeout=10)
+                self.app = Application().start(
+                    self.path_exe, work_dir=self.path, timeout=10
+                )
                 self.working = True
             except:
                 pass

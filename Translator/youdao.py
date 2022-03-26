@@ -33,7 +33,9 @@ class Youdao(Translator):
 
         if os.path.exists(self.path):
             try:
-                self.app = Application(backend="uia").start(self.path_exe, work_dir=self.path, timeout=10)
+                self.app = Application(backend="uia").start(
+                    self.path_exe, work_dir=self.path, timeout=10
+                )
                 self.working = True
             except:
                 pass

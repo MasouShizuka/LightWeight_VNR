@@ -7,6 +7,7 @@ from TTS.pyvcroid2 import VcRoid2
 
 # VOICEROID2
 
+
 class VOICEROID2(TTS):
     label = 'voiceroid2'
     name = 'VOICEROID2'

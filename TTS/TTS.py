@@ -1,4 +1,4 @@
-class TTS():
+class TTS:
     label = None
     name = None
 
@@ -14,10 +14,7 @@ class TTS():
         pass
 
     def read_text(self, text):
-        if '「' in text or \
-           '『' in text or \
-           '（' in text or \
-           '(' in text:
+        if '「' in text or '『' in text or '（' in text or '(' in text:
             if self.character:
                 self.read(text)
         else:

@@ -49,13 +49,21 @@ class Baidu(Translator):
         q = text
         sign = appid + q + str(salt) + secretKey
         sign = hashlib.md5(sign.encode()).hexdigest()
-        myurl = myurl \
-            + '?appid=' + appid \
-            + '&q=' + urllib.parse.quote(q) \
-            + '&from=' + fromLang \
-            + '&to=' + toLang \
-            + '&salt=' + str(salt) \
-            + '&sign=' + sign
+        myurl = (
+            myurl
+            + '?appid='
+            + appid
+            + '&q='
+            + urllib.parse.quote(q)
+            + '&from='
+            + fromLang
+            + '&to='
+            + toLang
+            + '&salt='
+            + str(salt)
+            + '&sign='
+            + sign
+        )
         try:
             httpClient = http.client.HTTPConnection('api.fanyi.baidu.com')
             httpClient.request('GET', myurl)

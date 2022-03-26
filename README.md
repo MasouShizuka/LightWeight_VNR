@@ -92,6 +92,7 @@
 #### JBeijing
 
 - `JBeijing`启用并保存即可
+    - 需要在 `Python 32 bit` 环境下
 
 #### 有道
 
@@ -126,7 +127,7 @@
 - 设置好`VOICEROID2路径`并`启用`即可（不需要打开）
 - 可选择`VOICEROID2`已拥有的的角色阅读
     - 角色名字为`VOICEROID2`路径下的`Voice`文件夹内的各个子文件夹名称
-- 可调整各项参数，同`VOICEROID2`软件界面的下方
+- 可调整各项参数，同`VOICEROID2`软件界面
 
 ### 文本
 
@@ -156,6 +157,5 @@
 
 ## 额外说明
 
-- 因界面排版问题，选择`Microsoft YaHei Mono`字体
 - 调用`J北京`、`Yukari`、`Tamiyasu`的代码参考了`VNR`的源码
 - 调用`VOICEROID2`的代码参考了`Nkyoku/pyvcroid2`项目

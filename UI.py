@@ -8,165 +8,133 @@ from OCR.threshold_ways import threshold_name
 from Translator.jbeijing import jbeijing_translate
 
 
-def UI(config, games=[], voiceroid2_list=[]):
-    game_list = [
-        [
-            sg.Listbox(
-                key='game_list',
-                values=games,
-                enable_events=True,
-                size=(81, 10),
-            )
-        ],
-    ]
+font_name = 'Microsoft Yahei'
 
-    game_info_text = sg.Column(
-        [
-            [sg.Text('游戏名称：')],
-            [sg.Text('程序目录：')],
-            [sg.Text('特殊码：')],
-            [sg.Text('启动方式：')],
-        ],
-        element_justification='right'
-    )
+
+def UI(config, **kw):
+    games = kw['games']
+    voiceroid2 = kw['voiceroid2']
+
+    game_list = [
+        [sg.Listbox(key='game_list', values=games, enable_events=True, size=(80, 10),)],
+    ]
 
     game_info_widget = sg.Column(
         [
             [
-                sg.Input(
-                    key='game_name',
-                    default_text='',
-                    size=(70, 1),
-                ),
+                sg.Text('游戏名称：', size=(8, 1)),
+                sg.Input(key='game_name', default_text='', size=(72, 1),),
             ],
             [
-                sg.Input(
-                    key='game_path',
-                    default_text='',
-                    size=(65, 1),
-                ),
-                sg.FileBrowse(
-                    '目录',
-                    key='game_dir',
-                    font=('Microsoft YaHei Mono', 12),
-                    size=(5, 1),
-                ),
+                sg.Text('程序目录：', size=(8, 1)),
+                sg.Input(key='game_path', default_text='', size=(68, 1),),
+                sg.FileBrowse('目录', key='game_dir', font=(font_name, 10), size=(4, 1),),
             ],
             [
-                sg.Input(
-                    key='game_hook_code',
-                    default_text='',
-                    size=(70, 1),
-                ),
-            ],
-            [
+                sg.Text('启动方式：', size=(8, 1)),
                 sg.Combo(
                     start_mode,
                     key='game_start_mode',
                     default_value='',
                     readonly=True,
-                    size=(69, 1),
+                    size=(71, 1),
                 ),
+            ],
+            [
+                sg.Text('特殊码：', size=(8, 1)),
+                sg.Input(key='game_hook_code', default_text='', size=(72, 1),),
             ],
         ],
     )
 
-    game_info_buttons = [
-        sg.Button('添加', key='game_add', pad=(20, 0)),
-        sg.Button('删除', key='game_delete', pad=(20, 0)),
-        sg.Button('启动游戏', key='game_start', pad=(20, 0)),
-    ]
+    game_info_buttons = sg.Column(
+        [
+            [
+                sg.Button('添加', key='game_add', pad=((0, 20), 0)),
+                sg.Button('删除', key='game_delete', pad=((0, 20), 0)),
+                sg.Button('启动游戏', key='game_start'),
+            ],
+        ],
+    )
 
     game_info = [
-        [
-            game_info_text,
-            game_info_widget,
-        ],
-        game_info_buttons,
+        [game_info_widget],
+        [game_info_buttons],
     ]
 
     game_layout = [
-        [
-            sg.Frame(
-                '游戏列表',
-                layout=game_list,
-            )
-        ],
-        [
-            sg.Frame(
-                '游戏信息',
-                layout=game_info,
-                element_justification='center',
-            )
-        ],
+        [sg.Frame('游戏列表', layout=game_list,)],
+        [sg.Frame('游戏信息', layout=game_info, element_justification='center',)],
     ]
 
-    textractor_buttons = [
-        [sg.Button('启动TR', key='textractor_start', pad=(20, 20))],
-        [sg.Button('Attach', key='textractor_attach', pad=(20, 20))],
-        [sg.Button('暂停', key='textractor_pause', pad=(20, 20))],
-        [sg.Button('特殊码', key='textractor_hook_code', pad=(20, 20))],
-        [sg.Button('终止', key='textractor_stop', pad=(20, 20))],
-        [sg.Button('浮动', key='floating', pad=(20, 20))],
-    ]
+    textractor_buttons = sg.Column(
+        [
+            [sg.Button('启动TR', key='textractor_start', pad=(20, 20))],
+            [sg.Button('Attach', key='textractor_attach', pad=(20, 20))],
+            [sg.Button('暂停', key='textractor_pause', pad=(20, 20))],
+            [sg.Button('特殊码', key='textractor_hook_code', pad=(20, 20))],
+            [sg.Button('终止TR', key='textractor_stop', pad=(20, 20))],
+            [sg.Button('浮动', key='floating', pad=(20, 20))],
+        ],
+    )
 
     textractor_layout = [
         [
-            sg.Text('进程：'),
-            sg.Combo(
-                [],
-                key='textractor_process',
-                size=(70, 1),
-            ),
+            sg.Text('进程：', size=(4, 1)),
+            sg.Combo([], key='textractor_process', size=(70, 1),),
             sg.Button('刷新', key='textractor_refresh', pad=(20, 20)),
         ],
         [
-            sg.Text('钩子：'),
-            sg.Combo(
-                [],
-                key='textractor_hook',
-                readonly=True,
-                size=(70, 1),
-            ),
+            sg.Text('钩子：', size=(4, 1)),
+            sg.Combo([], key='textractor_hook', readonly=True, size=(70, 1),),
             sg.Button('固定', key='textractor_fix', pad=(20, 0)),
         ],
         [
             sg.Frame(
                 '提取文本',
-                [[sg.Multiline('', key='textractor_text', autoscroll=True, size=(75, 16))]],
+                [
+                    [
+                        sg.Multiline(
+                            '', key='textractor_text', autoscroll=True, size=(72, 16)
+                        )
+                    ]
+                ],
             ),
-            sg.Column(textractor_buttons),
-        ]
-    ]
-
-    OCR_display = [
-        [
-            sg.Frame(
-                '截取区域',
-                [[sg.Image('', key='OCR_image')]],
-            )
-        ],
-        [
-            sg.Frame(
-                '提取文本',
-                [[sg.Multiline('', key='OCR_text', autoscroll=True, size=(75, 16))]],
-            ),
+            textractor_buttons,
         ],
     ]
 
-    OCR_buttons = [
-        [sg.Button('截取', key='OCR_area', pad=(20, 20))],
-        [sg.Button('连续', key='OCR_start', pad=(20, 20))],
-        [sg.Button('暂停', key='OCR_pause', pad=(20, 20))],
-        [sg.Button('结束', key='OCR_stop', pad=(20, 20))],
-        [sg.Button('浮动', key='floating', pad=(20, 20))],
-    ]
+    OCR_display = sg.Column(
+        [
+            [sg.Frame('截取区域', [[sg.Image('', key='OCR_image')]],)],
+            [
+                sg.Frame(
+                    '提取文本',
+                    [
+                        [
+                            sg.Multiline(
+                                '', key='OCR_text', autoscroll=True, size=(72, 16)
+                            )
+                        ]
+                    ],
+                ),
+            ],
+        ],
+        element_justification='center',
+    )
+
+    OCR_buttons = sg.Column(
+        [
+            [sg.Button('截取', key='OCR_area', pad=(20, 20))],
+            [sg.Button('连续', key='OCR_start', pad=(20, 20))],
+            [sg.Button('暂停', key='OCR_pause', pad=(20, 20))],
+            [sg.Button('结束', key='OCR_stop', pad=(20, 20))],
+            [sg.Button('浮动', key='floating', pad=(20, 20))],
+        ],
+    )
 
     OCR_layout = [
-        [
-            sg.Column(OCR_display, element_justification='center'),
-            sg.Column(OCR_buttons),
-        ],
+        [OCR_display, OCR_buttons,],
     ]
 
     translate_jbeijing = [
@@ -175,34 +143,29 @@ def UI(config, games=[], voiceroid2_list=[]):
                 'JBeijing',
                 [
                     [
-                        sg.Text('JBeijing：    '),
-                        sg.Checkbox(
-                            '启用',
-                            key='jbeijing',
-                            default=config['jbeijing'],
-                        )
+                        sg.Text('JBeijing：', size=(8, 1)),
+                        sg.Checkbox('启用', key='jbeijing', default=config['jbeijing'],),
                     ],
                     [
-                        sg.Text('JBeijing路径：'),
+                        sg.Text('路径：', size=(8, 1)),
                         sg.Input(
                             key='jbeijing_path',
                             default_text=config['jbeijing_path'],
                             size=(50, 1),
                         ),
-                        sg.FolderBrowse('目录', key='jbeijing_dir'),
+                        sg.FolderBrowse('目录', key='jbeijing_dir', font=(font_name, 10)),
                     ],
                     [
-                        sg.Text('翻译语言：    '),
+                        sg.Text('翻译语言：', size=(8, 1)),
                         sg.Combo(
                             jbeijing_translate,
                             key='jbeijing_to',
                             default_value=config['jbeijing_to'],
                             readonly=True,
-                            size=(14, 1),
+                            size=(12, 1),
                         ),
                     ],
                 ],
-                pad=(10, 10),
             ),
         ],
     ]
@@ -213,29 +176,29 @@ def UI(config, games=[], voiceroid2_list=[]):
                 '有道',
                 [
                     [
-                        sg.Text('有道词典：'),
+                        sg.Text('有道词典：', size=(8, 1)),
                         sg.Button('启动有道', key='youdao_start'),
                         sg.Button('终止有道', key='youdao_stop', pad=(20, 0)),
                     ],
                     [
-                        sg.Text('有道路径：'),
+                        sg.Text('路径：', size=(8, 1)),
                         sg.Input(
                             key='youdao_path',
                             default_text=config['youdao_path'],
                             size=(50, 1),
                         ),
-                        sg.FolderBrowse('目录', key='youdao_dir'),
+                        sg.FolderBrowse('目录', key='youdao_dir', font=(font_name, 10)),
                     ],
                     [
-                        sg.Text('抓取翻译：'),
+                        sg.Text('抓取翻译：', size=(8, 1)),
                         sg.Checkbox(
                             '启用',
                             key='youdao_get_translate',
                             default=config['youdao_get_translate'],
-                        )
+                        ),
                     ],
                     [
-                        sg.Text('抓取间隔：'),
+                        sg.Text('抓取间隔：', size=(8, 1)),
                         sg.Input(
                             key='youdao_interval',
                             default_text=config['youdao_interval'],
@@ -244,7 +207,6 @@ def UI(config, games=[], voiceroid2_list=[]):
                         sg.Text('秒'),
                     ],
                 ],
-                pad=(10, 10),
             ),
         ],
     ]
@@ -255,15 +217,11 @@ def UI(config, games=[], voiceroid2_list=[]):
                 '百度翻译',
                 [
                     [
-                        sg.Text('百度翻译：'),
-                        sg.Checkbox(
-                            '启用',
-                            key='baidu',
-                            default=config['baidu'],
-                        )
+                        sg.Text('百度翻译：', size=(8, 1)),
+                        sg.Checkbox('启用', key='baidu', default=config['baidu'],),
                     ],
                     [
-                        sg.Text('APP ID：  '),
+                        sg.Text('APPID：', size=(8, 1)),
                         sg.Input(
                             key='baidu_appid',
                             default_text=config['baidu_appid'],
@@ -271,7 +229,7 @@ def UI(config, games=[], voiceroid2_list=[]):
                         ),
                     ],
                     [
-                        sg.Text('密钥：    '),
+                        sg.Text('密钥：', size=(8, 1)),
                         sg.Input(
                             key='baidu_key',
                             default_text=config['baidu_key'],
@@ -279,7 +237,6 @@ def UI(config, games=[], voiceroid2_list=[]):
                         ),
                     ],
                 ],
-                pad=(10, 10),
             ),
         ],
     ]
@@ -300,9 +257,7 @@ def UI(config, games=[], voiceroid2_list=[]):
                             tab_location='lefttop',
                         )
                     ],
-                    [
-                        sg.Button('保存', key='save'),
-                    ],
+                    [sg.Button('保存', key='save'),],
                 ],
                 element_justification='center',
             )
@@ -315,33 +270,31 @@ def UI(config, games=[], voiceroid2_list=[]):
                 'Yukari',
                 [
                     [
-                        sg.Text('Yukari：   '),
-                        sg.Button('启动Yukari', key='yukari_start', pad=(20, 0)),
+                        sg.Text('Yukari：', size=(8, 1)),
+                        sg.Button('启动Yukari', key='yukari_start'),
                         sg.Button('终止Yukari', key='yukari_stop', pad=(20, 0)),
                     ],
                     [
-                        sg.Text('Yukari路径：'),
+                        sg.Text('路径：', size=(8, 1)),
                         sg.Input(
                             key='yukari_path',
                             default_text=config['yukari_path'],
                             size=(50, 1),
                         ),
-                        sg.FolderBrowse('目录', key='yukari_dir'),
+                        sg.FolderBrowse('目录', key='yukari_dir', font=(font_name, 10)),
                     ],
                     [
-                        sg.Text('连续阅读：  '),
+                        sg.Text('连续阅读：', size=(8, 1)),
                         sg.Checkbox(
                             '启用',
                             key='yukari_constantly',
                             default=config['yukari_constantly'],
-                        )
+                        ),
                     ],
                     [
-                        sg.Text('阅读内容：  '),
+                        sg.Text('阅读内容：', size=(8, 1)),
                         sg.Checkbox(
-                            '旁白',
-                            key='yukari_aside',
-                            default=config['yukari_aside'],
+                            '旁白', key='yukari_aside', default=config['yukari_aside'],
                         ),
                         sg.Checkbox(
                             '角色',
@@ -350,7 +303,6 @@ def UI(config, games=[], voiceroid2_list=[]):
                         ),
                     ],
                 ],
-                pad=(10, 10),
             ),
         ],
     ]
@@ -361,29 +313,29 @@ def UI(config, games=[], voiceroid2_list=[]):
                 'Tamiyasu',
                 [
                     [
-                        sg.Text('Tamiyasu：   '),
-                        sg.Button('启动Tamiyasu', key='tamiyasu_start', pad=(20, 0)),
+                        sg.Text('Tamiyasu：', size=(8, 1)),
+                        sg.Button('启动Tamiyasu', key='tamiyasu_start'),
                         sg.Button('终止Tamiyasu', key='tamiyasu_stop', pad=(20, 0)),
                     ],
                     [
-                        sg.Text('Tamiyasu路径：'),
+                        sg.Text('路径：', size=(8, 1)),
                         sg.Input(
                             key='tamiyasu_path',
                             default_text=config['tamiyasu_path'],
                             size=(50, 1),
                         ),
-                        sg.FolderBrowse('目录', key='tamiyasu_dir'),
+                        sg.FolderBrowse('目录', key='tamiyasu_dir', font=(font_name, 10)),
                     ],
                     [
-                        sg.Text('连续阅读：    '),
+                        sg.Text('连续阅读：', size=(8, 1)),
                         sg.Checkbox(
                             '启用',
                             key='tamiyasu_constantly',
                             default=config['tamiyasu_constantly'],
-                        )
+                        ),
                     ],
                     [
-                        sg.Text('阅读内容：    '),
+                        sg.Text('阅读内容：', size=(8, 1)),
                         sg.Checkbox(
                             '旁白',
                             key='tamiyasu_aside',
@@ -396,7 +348,6 @@ def UI(config, games=[], voiceroid2_list=[]):
                         ),
                     ],
                 ],
-                pad=(10, 10),
             ),
         ],
     ]
@@ -407,28 +358,28 @@ def UI(config, games=[], voiceroid2_list=[]):
                 'VOICEROID2',
                 [
                     [
-                        sg.Text('VOICEROID2：    '),
+                        sg.Text('VOICEROID2：', size=(12, 1)),
                         sg.Checkbox(
-                            '启用',
-                            key='voiceroid2',
-                            default=config['voiceroid2'],
-                        )
+                            '启用', key='voiceroid2', default=config['voiceroid2'],
+                        ),
                     ],
                     [
-                        sg.Text('VOICEROID2路径：'),
+                        sg.Text('路径：', size=(12, 1)),
                         sg.Input(
                             key='voiceroid2_path',
                             default_text=config['voiceroid2_path'],
                             size=(50, 1),
                         ),
-                        sg.FolderBrowse('目录', key='voiceroid2_dir'),
+                        sg.FolderBrowse(
+                            '目录', key='voiceroid2_dir', font=(font_name, 10)
+                        ),
                     ],
                     [
-                        sg.Text('启用Voice：     '),
+                        sg.Text('启用Voice： ', size=(12, 1)),
                         sg.Combo(
-                            voiceroid2_list['voiceroid2_voice_list'],
+                            voiceroid2.voice_list,
                             key='voiceroid2_voice_selected',
-                            default_value=voiceroid2_list['voiceroid2_voice_selected'],
+                            default_value=voiceroid2.voice_selected,
                             readonly=True,
                             size=(50, 1),
                         ),
@@ -443,8 +394,10 @@ def UI(config, games=[], voiceroid2_list=[]):
                                             [
                                                 sg.Slider(
                                                     key='voiceroid2_master_volume',
-                                                    default_value=config['voiceroid2_master_volume'],
-                                                    font=('Microsoft YaHei Mono', 8),
+                                                    default_value=config[
+                                                        'voiceroid2_master_volume'
+                                                    ],
+                                                    font=(font_name, 8),
                                                     orientation='v',
                                                     range=(0, 5.0),
                                                     resolution=0.01,
@@ -452,19 +405,20 @@ def UI(config, games=[], voiceroid2_list=[]):
                                                     tick_interval=1,
                                                 ),
                                             ],
-                                            [
-                                                sg.Text('マスター音量', font=('Microsoft YaHei Mono', 8)),
-                                            ],
+                                            [sg.Text('マスター音量', font=(font_name, 8)),],
                                         ],
-                                        element_justification='right', pad=(15, 0),
+                                        element_justification='right',
+                                        pad=(15, 0),
                                     ),
                                     sg.Column(
                                         [
                                             [
                                                 sg.Slider(
                                                     key='voiceroid2_volume',
-                                                    default_value=config['voiceroid2_volume'],
-                                                    font=('Microsoft YaHei Mono', 8),
+                                                    default_value=config[
+                                                        'voiceroid2_volume'
+                                                    ],
+                                                    font=(font_name, 8),
                                                     orientation='v',
                                                     range=(0, 2.0),
                                                     resolution=0.01,
@@ -472,19 +426,20 @@ def UI(config, games=[], voiceroid2_list=[]):
                                                     tick_interval=0.5,
                                                 ),
                                             ],
-                                            [
-                                                sg.Text('音量', font=('Microsoft YaHei Mono', 8)),
-                                            ],
+                                            [sg.Text('音量', font=(font_name, 8)),],
                                         ],
-                                        element_justification='right', pad=(15, 0),
+                                        element_justification='right',
+                                        pad=(15, 0),
                                     ),
                                     sg.Column(
                                         [
                                             [
                                                 sg.Slider(
                                                     key='voiceroid2_speed',
-                                                    default_value=config['voiceroid2_speed'],
-                                                    font=('Microsoft YaHei Mono', 8),
+                                                    default_value=config[
+                                                        'voiceroid2_speed'
+                                                    ],
+                                                    font=(font_name, 8),
                                                     orientation='v',
                                                     range=(0.5, 4.0),
                                                     resolution=0.01,
@@ -492,19 +447,20 @@ def UI(config, games=[], voiceroid2_list=[]):
                                                     tick_interval=1.0,
                                                 ),
                                             ],
-                                            [
-                                                sg.Text('話速', font=('Microsoft YaHei Mono', 8)),
-                                            ],
+                                            [sg.Text('話速', font=(font_name, 8)),],
                                         ],
-                                        element_justification='right', pad=(15, 0),
+                                        element_justification='right',
+                                        pad=(15, 0),
                                     ),
                                     sg.Column(
                                         [
                                             [
                                                 sg.Slider(
                                                     key='voiceroid2_pitch',
-                                                    default_value=config['voiceroid2_pitch'],
-                                                    font=('Microsoft YaHei Mono', 8),
+                                                    default_value=config[
+                                                        'voiceroid2_pitch'
+                                                    ],
+                                                    font=(font_name, 8),
                                                     orientation='v',
                                                     range=(0.5, 2.0),
                                                     resolution=0.01,
@@ -512,19 +468,20 @@ def UI(config, games=[], voiceroid2_list=[]):
                                                     tick_interval=0.5,
                                                 ),
                                             ],
-                                            [
-                                                sg.Text('高さ', font=('Microsoft YaHei Mono', 8)),
-                                            ],
+                                            [sg.Text('高さ', font=(font_name, 8)),],
                                         ],
-                                        element_justification='right', pad=(15, 0),
+                                        element_justification='right',
+                                        pad=(15, 0),
                                     ),
                                     sg.Column(
                                         [
                                             [
                                                 sg.Slider(
                                                     key='voiceroid2_emphasis',
-                                                    default_value=config['voiceroid2_emphasis'],
-                                                    font=('Microsoft YaHei Mono', 8),
+                                                    default_value=config[
+                                                        'voiceroid2_emphasis'
+                                                    ],
+                                                    font=(font_name, 8),
                                                     orientation='v',
                                                     range=(0.5, 2.0),
                                                     resolution=0.01,
@@ -532,19 +489,20 @@ def UI(config, games=[], voiceroid2_list=[]):
                                                     tick_interval=0.5,
                                                 ),
                                             ],
-                                            [
-                                                sg.Text('抑揚', font=('Microsoft YaHei Mono', 8)),
-                                            ],
+                                            [sg.Text('抑揚', font=(font_name, 8)),],
                                         ],
-                                        element_justification='right', pad=(15, 0),
+                                        element_justification='right',
+                                        pad=(15, 0),
                                     ),
                                     sg.Column(
                                         [
                                             [
                                                 sg.Slider(
                                                     key='voiceroid2_pause_middle',
-                                                    default_value=config['voiceroid2_pause_middle'],
-                                                    font=('Microsoft YaHei Mono', 8),
+                                                    default_value=config[
+                                                        'voiceroid2_pause_middle'
+                                                    ],
+                                                    font=(font_name, 8),
                                                     orientation='v',
                                                     range=(80, 500),
                                                     resolution=1,
@@ -552,19 +510,20 @@ def UI(config, games=[], voiceroid2_list=[]):
                                                     tick_interval=100,
                                                 ),
                                             ],
-                                            [
-                                                sg.Text('短ポーズ時間', font=('Microsoft YaHei Mono', 8)),
-                                            ],
+                                            [sg.Text('短ポーズ時間', font=(font_name, 8)),],
                                         ],
-                                        element_justification='right', pad=(15, 0),
+                                        element_justification='right',
+                                        pad=(15, 0),
                                     ),
                                     sg.Column(
                                         [
                                             [
                                                 sg.Slider(
                                                     key='voiceroid2_pause_long',
-                                                    default_value=config['voiceroid2_pause_long'],
-                                                    font=('Microsoft YaHei Mono', 8),
+                                                    default_value=config[
+                                                        'voiceroid2_pause_long'
+                                                    ],
+                                                    font=(font_name, 8),
                                                     orientation='v',
                                                     range=(100, 2000),
                                                     resolution=1,
@@ -572,19 +531,20 @@ def UI(config, games=[], voiceroid2_list=[]):
                                                     tick_interval=500,
                                                 ),
                                             ],
-                                            [
-                                                sg.Text('長ポーズ時間', font=('Microsoft YaHei Mono', 8)),
-                                            ],
+                                            [sg.Text('長ポーズ時間', font=(font_name, 8)),],
                                         ],
-                                        element_justification='right', pad=(15, 0),
+                                        element_justification='right',
+                                        pad=(15, 0),
                                     ),
                                     sg.Column(
                                         [
                                             [
                                                 sg.Slider(
                                                     key='voiceroid2_pause_sentence',
-                                                    default_value=config['voiceroid2_pause_sentence'],
-                                                    font=('Microsoft YaHei Mono', 8),
+                                                    default_value=config[
+                                                        'voiceroid2_pause_sentence'
+                                                    ],
+                                                    font=(font_name, 8),
                                                     orientation='v',
                                                     range=(200, 10000),
                                                     resolution=1,
@@ -592,30 +552,27 @@ def UI(config, games=[], voiceroid2_list=[]):
                                                     tick_interval=2000,
                                                 ),
                                             ],
-                                            [
-                                                sg.Text('文末ポーズ時間', font=('Microsoft YaHei Mono', 8)),
-                                            ],
+                                            [sg.Text('文末ポーズ時間', font=(font_name, 8)),],
                                         ],
-                                        element_justification='right', pad=(15, 0)
+                                        element_justification='right',
+                                        pad=(15, 0),
                                     ),
                                 ],
-                                [
-                                    sg.Button('修改具体数值', key='voiceroid2_modify'),
-                                ],
+                                [sg.Button('修改具体数值', key='voiceroid2_modify'),],
                             ],
                             element_justification='center',
                         ),
                     ],
                     [
-                        sg.Text('连续阅读：      '),
+                        sg.Text('连续阅读：', size=(12, 1)),
                         sg.Checkbox(
                             '启用',
                             key='voiceroid2_constantly',
                             default=config['voiceroid2_constantly'],
-                        )
+                        ),
                     ],
                     [
-                        sg.Text('阅读内容：      '),
+                        sg.Text('阅读内容：', size=(12, 1)),
                         sg.Checkbox(
                             '旁白',
                             key='voiceroid2_aside',
@@ -628,7 +585,6 @@ def UI(config, games=[], voiceroid2_list=[]):
                         ),
                     ],
                 ],
-                pad=(10, 10),
             ),
         ],
     ]
@@ -649,12 +605,10 @@ def UI(config, games=[], voiceroid2_list=[]):
                             tab_location='lefttop',
                         )
                     ],
-                    [
-                        sg.Button('保存', key='save'),
-                    ],
+                    [sg.Button('保存', key='save'),],
                 ],
                 element_justification='center',
-            )
+            ),
         ],
     ]
 
@@ -676,7 +630,6 @@ def UI(config, games=[], voiceroid2_list=[]):
                         ),
                     ],
                 ],
-                pad=(10, 10),
             ),
         ],
         [
@@ -685,14 +638,9 @@ def UI(config, games=[], voiceroid2_list=[]):
                 [
                     [
                         sg.Text('窗口置顶：'),
-                        sg.Checkbox(
-                            '启用',
-                            key='top',
-                            default=config['top'],
-                        )
+                        sg.Checkbox('启用', key='top', default=config['top'],),
                     ],
                 ],
-                pad=(10, 10),
             )
         ],
         [
@@ -701,14 +649,9 @@ def UI(config, games=[], voiceroid2_list=[]):
                 [
                     [
                         sg.Text('复制到剪切板：'),
-                        sg.Checkbox(
-                            '启用',
-                            key='copy',
-                            default=config['copy'],
-                        )
+                        sg.Checkbox('启用', key='copy', default=config['copy'],),
                     ],
                 ],
-                pad=(10, 10),
             )
         ],
     ]
@@ -719,16 +662,17 @@ def UI(config, games=[], voiceroid2_list=[]):
                 'Locale Emulator',
                 [
                     [
-                        sg.Text('Locale Emulator路径：'),
+                        sg.Text('路径：'),
                         sg.Input(
                             key='locale_emulator_path',
                             default_text=config['locale_emulator_path'],
                             size=(50, 1),
                         ),
-                        sg.FolderBrowse('目录', key='locale_emulator_dir'),
+                        sg.FolderBrowse(
+                            '目录', key='locale_emulator_dir', font=(font_name, 10)
+                        ),
                     ],
                 ],
-                pad=(10, 10),
             )
         ]
     ]
@@ -738,26 +682,27 @@ def UI(config, games=[], voiceroid2_list=[]):
             sg.Frame(
                 'Textractor',
                 [
-                        [
-                            sg.Text('Textractor路径：'),
-                            sg.Input(
-                                key='textractor_path',
-                                default_text=config['textractor_path'],
-                                size=(50, 1),
-                            ),
-                            sg.FolderBrowse('目录', key='textractor_dir'),
-                        ],
                     [
-                            sg.Text('Textractor间隔：'),
-                            sg.Input(
-                                key='textractor_interval',
-                                default_text=config['textractor_interval'],
-                                size=(6, 1),
-                            ),
-                            sg.Text('秒'),
-                        ],
+                        sg.Text('路径：', size=(8, 1)),
+                        sg.Input(
+                            key='textractor_path',
+                            default_text=config['textractor_path'],
+                            size=(50, 1),
+                        ),
+                        sg.FolderBrowse(
+                            '目录', key='textractor_dir', font=(font_name, 10)
+                        ),
+                    ],
+                    [
+                        sg.Text('抓取间隔：', size=(8, 1)),
+                        sg.Input(
+                            key='textractor_interval',
+                            default_text=config['textractor_interval'],
+                            size=(6, 1),
+                        ),
+                        sg.Text('秒'),
+                    ],
                 ],
-                pad=(10, 10),
             )
         ],
     ]
@@ -768,16 +713,18 @@ def UI(config, games=[], voiceroid2_list=[]):
                 'Tesseract-OCR',
                 [
                     [
-                        sg.Text('Tesseract-OCR路径：'),
+                        sg.Text('路径：', size=(8, 1)),
                         sg.Input(
                             key='tesseract_OCR_path',
                             default_text=config['tesseract_OCR_path'],
                             size=(50, 1),
                         ),
-                        sg.FolderBrowse('目录', key='tesseract_OCR_dir'),
+                        sg.FolderBrowse(
+                            '目录', key='tesseract_OCR_dir', font=(font_name, 10)
+                        ),
                     ],
                     [
-                        sg.Text('识别语言：         '),
+                        sg.Text('识别语言：', size=(8, 1)),
                         sg.Combo(
                             lang_translate,
                             key='OCR_language',
@@ -787,7 +734,6 @@ def UI(config, games=[], voiceroid2_list=[]):
                         ),
                     ],
                 ],
-                pad=(10, 10),
             )
         ],
         [
@@ -795,7 +741,7 @@ def UI(config, games=[], voiceroid2_list=[]):
                 '截屏',
                 [
                     [
-                        sg.Text('截屏间隔：'),
+                        sg.Text('截屏间隔：', size=(8, 1)),
                         sg.Input(
                             key='OCR_interval',
                             default_text=config['OCR_interval'],
@@ -804,7 +750,6 @@ def UI(config, games=[], voiceroid2_list=[]):
                         sg.Text('秒'),
                     ],
                 ],
-                pad=(10, 10),
             )
         ],
         [
@@ -812,7 +757,7 @@ def UI(config, games=[], voiceroid2_list=[]):
                 '图片处理',
                 [
                     [
-                        sg.Text('阈值化方法：'),
+                        sg.Text('阈值化方法：', size=(10, 1)),
                         sg.Combo(
                             threshold_name,
                             key='threshold_way',
@@ -822,7 +767,7 @@ def UI(config, games=[], voiceroid2_list=[]):
                         ),
                     ],
                     [
-                        sg.Text('阈值：'),
+                        sg.Text('阈值：', size=(10, 1)),
                         sg.Slider(
                             key='threshold',
                             default_value=config['threshold'],
@@ -834,7 +779,6 @@ def UI(config, games=[], voiceroid2_list=[]):
                         ),
                     ],
                 ],
-                pad=(10, 10),
             )
         ],
     ]
@@ -856,7 +800,7 @@ def UI(config, games=[], voiceroid2_list=[]):
                             '启用',
                             key='deduplication_aabbcc_auto',
                             default=config['deduplication_aabbcc_auto'],
-                        )
+                        ),
                     ],
                     [
                         sg.Text('文本去重数（abcabc）：'),
@@ -870,7 +814,7 @@ def UI(config, games=[], voiceroid2_list=[]):
                             '启用',
                             key='deduplication_abcabc_auto',
                             default=config['deduplication_abcabc_auto'],
-                        )
+                        ),
                     ],
                     [
                         sg.Text('垃圾字符表：'),
@@ -882,14 +826,9 @@ def UI(config, games=[], voiceroid2_list=[]):
                     ],
                     [
                         sg.Text('正则表达式：'),
-                        sg.Input(
-                            key='re',
-                            default_text=config['re'],
-                            size=(50, 1),
-                        ),
+                        sg.Input(key='re', default_text=config['re'], size=(50, 1),),
                     ],
                 ],
-                pad=(10, 10),
             )
         ]
     ]
@@ -905,10 +844,9 @@ def UI(config, games=[], voiceroid2_list=[]):
                             '启用',
                             key='floating_text_original',
                             default=config['floating_text_original'],
-                        )
+                        ),
                     ],
                 ],
-                pad=(10, 10),
             )
         ],
     ]
@@ -932,9 +870,7 @@ def UI(config, games=[], voiceroid2_list=[]):
                             tab_location='lefttop',
                         )
                     ],
-                    [
-                        sg.Button('保存', key='save'),
-                    ],
+                    [sg.Button('保存', key='save'),],
                 ],
                 element_justification='center',
             )
@@ -958,4 +894,161 @@ def UI(config, games=[], voiceroid2_list=[]):
             ),
         ],
     ]
+    return layout
+
+
+def textractor_hook_code_layout():
+    layout = [
+        [
+            sg.Column(
+                [
+                    [sg.Text('特殊码:'), sg.Input(key='hook_code', size=(20, 1),),],
+                    [sg.Button('使用')],
+                ],
+                element_justification='center',
+            )
+        ]
+    ]
+
+    return layout
+
+
+def voiceload2_layout(config):
+    layout = [
+        [
+            sg.Text('マスター音量：', size=(14, 1)),
+            sg.Input(
+                key='voiceroid2_master_volume',
+                default_text=str(config['voiceroid2_master_volume']),
+                size=(10, 1),
+            ),
+        ],
+        [
+            sg.Text('音量：', size=(14, 1)),
+            sg.Input(
+                key='voiceroid2_volume',
+                default_text=str(config['voiceroid2_volume']),
+                size=(10, 1),
+            ),
+        ],
+        [
+            sg.Text('話速：', size=(14, 1)),
+            sg.Input(
+                key='voiceroid2_speed',
+                default_text=str(config['voiceroid2_speed']),
+                size=(10, 1),
+            ),
+        ],
+        [
+            sg.Text('高さ：', size=(14, 1)),
+            sg.Input(
+                key='voiceroid2_pitch',
+                default_text=str(config['voiceroid2_pitch']),
+                size=(10, 1),
+            ),
+        ],
+        [
+            sg.Text('抑揚：', size=(14, 1)),
+            sg.Input(
+                key='voiceroid2_emphasis',
+                default_text=str(config['voiceroid2_emphasis']),
+                size=(10, 1),
+            ),
+        ],
+        [
+            sg.Text('短ポーズ時間：', size=(14, 1)),
+            sg.Input(
+                key='voiceroid2_pause_middle',
+                default_text=str(config['voiceroid2_pause_middle']),
+                size=(10, 1),
+            ),
+        ],
+        [
+            sg.Text('長ポーズ時間：', size=(14, 1)),
+            sg.Input(
+                key='voiceroid2_pause_long',
+                default_text=str(config['voiceroid2_pause_long']),
+                size=(10, 1),
+            ),
+        ],
+        [
+            sg.Text('文末ポーズ時間：', size=(14, 1)),
+            sg.Input(
+                key='voiceroid2_pause_sentence',
+                default_text=str(config['voiceroid2_pause_sentence']),
+                size=(10, 1),
+            ),
+        ],
+        [sg.Button('保存'),],
+    ]
+
+    return layout
+
+
+def floating_layout(config, translators, multiline_width):
+    text_layout = []
+
+    if config['floating_text_original']:
+        floating_text_original = [
+            sg.Text('原文'),
+            sg.Frame(
+                '',
+                [
+                    [
+                        sg.Multiline(
+                            '',
+                            key='text_original',
+                            size=(multiline_width, 2),
+                            disabled=True,
+                        )
+                    ]
+                ],
+            ),
+        ]
+        text_layout.append(floating_text_original)
+    for translator_label in translators:
+        translator = translators[translator_label]
+        if translator.working:
+            if not translator.get_translate:
+                pass
+            else:
+                layout = [
+                    sg.Text(translator.name),
+                    sg.Frame(
+                        '',
+                        [
+                            [
+                                sg.Multiline(
+                                    '',
+                                    key=translator.key,
+                                    size=(multiline_width, 2),
+                                    disabled=True,
+                                )
+                            ]
+                        ],
+                    ),
+                ]
+                text_layout.append(layout)
+
+    # 若未选择任何文本栏，则放置一片区域，方便拖动和右键菜单
+    if len(text_layout) == 0:
+        blank = [
+            sg.Text('空白'),
+        ]
+        text_layout.append(blank)
+
+    layout = [
+        [
+            sg.Column(
+                [
+                    [
+                        sg.Column(text_layout),
+                        sg.Button('暂停', key='pause', pad=(10, 0), font=(font_name, 12)),
+                        sg.Button('阅读', key='read', pad=(10, 0), font=(font_name, 12)),
+                    ],
+                ],
+            ),
+        ],
+    ]
+
     return layout

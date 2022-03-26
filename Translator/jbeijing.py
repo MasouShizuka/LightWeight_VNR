@@ -33,8 +33,7 @@ class JBeijing(Translator):
 
     # 借鉴了VNR中调用JBeijing的方法
     def translate(self, text, **kw):
-        if not os.path.exists(self.path) or \
-           not os.path.exists(self.path_dll):
+        if not os.path.exists(self.path) or not os.path.exists(self.path_dll):
             return ''
         try:
             dll = CDLL(self.path_dll)
