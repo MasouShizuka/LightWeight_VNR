@@ -21,7 +21,6 @@ class Tamiyasu(TTS):
 
     def __init__(self, config):
         self.working = False
-        self.update_config(config)
 
         self.app = None
         self.win = None
@@ -29,11 +28,9 @@ class Tamiyasu(TTS):
         self.play_button = None
         self.stop_button = None
 
-    def update_config(self, config, **kw):
-        self.constantly = config['tamiyasu_constantly']
-        self.aside = config['tamiyasu_aside']
-        self.character = config['tamiyasu_character']
+        self.update_config(config)
 
+    def update_config(self, config, **kw):
         self.path = config['tamiyasu_path']
         self.path_exe = os.path.join(self.path, 'VOICEROID.exe')
 

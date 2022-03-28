@@ -21,7 +21,6 @@ class Yukari(TTS):
 
     def __init__(self, config):
         self.working = False
-        self.update_config(config)
 
         self.app = None
         self.win = None
@@ -29,11 +28,9 @@ class Yukari(TTS):
         self.play_button = None
         self.stop_button = None
 
-    def update_config(self, config, **kw):
-        self.constantly = config['yukari_constantly']
-        self.aside = config['yukari_aside']
-        self.character = config['yukari_character']
+        self.update_config(config)
 
+    def update_config(self, config, **kw):
         self.path = config['yukari_path']
         self.path_exe = os.path.join(self.path, 'VOICEROID.exe')
 

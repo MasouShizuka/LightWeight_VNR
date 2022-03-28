@@ -17,21 +17,18 @@ class VOICEROID2(TTS):
 
     def update_config(self, config, main_window=None, **kw):
         self.working = config['voiceroid2']
-        self.constantly = config['voiceroid2_constantly']
-        self.aside = config['voiceroid2_aside']
-        self.character = config['voiceroid2_character']
-
         self.path = config['voiceroid2_path']
         self.voice_selected = config['voiceroid2_voice_selected']
 
         self.vc = None
         self.voice_list = []
         if self.working:
-            self.load_pyvcroid2(config, main_window)
-        elif main_window:
-            main_window['voiceroid2_voice_selected'].update(values=[])
+            self.load_pyvcroid2(config)
+        if main_window:
+            main_window['voiceroid2_voice_selected'].update(values=self.voice_list)
+            main_window['voiceroid2_voice_selected'].update(self.voice_selected)
 
-    def load_pyvcroid2(self, config, main_window=None):
+    def load_pyvcroid2(self, config):
         try:
             self.vc = VcRoid2(install_path=self.path, install_path_x86=self.path)
             # Load language library
@@ -52,9 +49,6 @@ class VOICEROID2(TTS):
                 self.vc.loadVoice(self.voice_selected)
             else:
                 raise Exception("No voice library")
-            if main_window:
-                main_window['voiceroid2_voice_selected'].update(values=self.voice_list)
-                main_window['voiceroid2_voice_selected'].update(self.voice_selected)
 
             # Set Params
             self.vc.param.masterVolume = config['voiceroid2_master_volume']
@@ -73,6 +67,7 @@ class VOICEROID2(TTS):
         text = text.replace('～', ' ')
         text = text.replace('。', ' ')
         text = text.replace('？', ' ')
+        text = text.replace('！', ' ')
 
         return text
 

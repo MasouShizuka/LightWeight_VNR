@@ -14,12 +14,13 @@ class Youdao(Translator):
 
     def __init__(self, config):
         self.working = False
-        self.update_config(config)
 
         self.app = None
         self.win = None
         self.edit_original = None
         self.edit_translate = None
+
+        self.update_config(config)
 
     def update_config(self, config):
         self.get_translate = config['youdao_get_translate']
@@ -75,6 +76,7 @@ class Youdao(Translator):
                     text_translate += i.get_line(0)
             else:
                 text_translate = ''
+
             return text_translate
         except:
             pass

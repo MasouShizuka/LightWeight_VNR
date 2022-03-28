@@ -13,7 +13,15 @@ from pynput import keyboard
 from pyperclip import copy
 from pywinauto.application import Application
 
-from UI import UI, textractor_hook_code_layout, voiceload2_layout, floating_layout
+from UI import (
+    font_name,
+    font_size,
+    UI,
+    textractor_hook_code_layout,
+    voiceload2_layout,
+    voicevox_layout,
+    floating_layout,
+)
 from config import default_config
 from game import (
     game_info,
@@ -22,6 +30,7 @@ from game import (
     start_directly,
     start_with_locale_emulator,
 )
+from textractor import Textractor
 
 from OCR.tesseract_OCR import pytesseract, languages, tesseract_OCR
 from OCR.threshold_ways import threshold_ways
@@ -33,20 +42,17 @@ from Translator.baidu import Baidu
 from TTS.yukari import Yukari
 from TTS.tamiyasu import Tamiyasu
 from TTS.voiceroid2 import VOICEROID2
+from TTS.voicevox import VOICEVOX
 
-
-font_name = 'Microsoft Yahei'
-font_size = 15
-font = (font_name, font_size)
 
 sg.theme('DarkGrey5')
-sg.set_options(font=font)
+sg.set_options(font=(font_name, font_size))
 
 
 def px_to_size(width, height):
     from tkinter.font import Font
 
-    tkfont = Font(font=font)
+    tkfont = Font(font=(font_name, font_size))
     w, h = tkfont.measure('A'), tkfont.metrics('linespace')
 
     return width // w, height // h
@@ -65,17 +71,10 @@ class Main_Window:
         self.game_window = None
         # 读取游戏信息
         self.game, running = load_game()
-        if running:
-            self.game_update_curr(
-                self.game['curr_game_id'], self.game['curr_game_name']
-            )
         self.games = [i['name'] for i in self.game['game_list']]
 
         # Textractor相关变量
-        self.textractor_working = False
-        self.textractor_pause = False
-        self.cli = None
-        self.fixed_hook = None
+        self.textractor = Textractor(self.config)
 
         # OCR相关变量
         pytesseract.pytesseract.tesseract_cmd = os.path.join(
@@ -105,19 +104,18 @@ class Main_Window:
             self.youdao.label: self.youdao,
             self.baidu.label: self.baidu,
         }
-        self.text_translate = {
-            translator.label: '' for translator in self.translators.values()
-        }
 
         # TTS相关变量
         self.yukari = Yukari(self.config)
         self.tamiyasu = Tamiyasu(self.config)
         self.voiceroid2 = VOICEROID2(self.config)
+        self.voicevox = VOICEVOX(self.config)
 
         self.TTS = {
             self.yukari.label: self.yukari,
             self.tamiyasu.label: self.tamiyasu,
             self.voiceroid2.label: self.voiceroid2,
+            self.voicevox.label: self.voicevox,
         }
 
         # 浮动窗口相关变量
@@ -138,6 +136,11 @@ class Main_Window:
             resizable=True,
         )
 
+        event, values = self.main_window.read(timeout=0)
+        if running:
+            self.game_update_curr(
+                self.game['curr_game_id'], self.game['curr_game_name']
+            )
         while True:
             event, values = self.main_window.read()
             if event is None:
@@ -156,15 +159,15 @@ class Main_Window:
             elif event == 'textractor_refresh':
                 self.textractor_refresh_process_list()
             elif event == 'textractor_fix':
-                self.textractor_fix_hook()
+                self.textractor.fix_hook(main_window=self.main_window)
             elif event == 'textractor_start':
                 self.textractor_start()
+            elif event == 'textractor_stop':
+                self.textractor.stop(main_window=self.main_window)
             elif event == 'textractor_attach':
                 self.textractor_attach()
             elif event == 'textractor_hook_code':
                 self.textractor_hook_code()
-            elif event == 'textractor_stop':
-                self.textractor_stop()
 
             # 光学界面
             elif event == 'OCR_area':
@@ -194,6 +197,12 @@ class Main_Window:
                 self.TTS[self.tamiyasu.label].stop()
             elif event == 'voiceroid2_modify':
                 self.voiceroid2_modify()
+            elif event == 'voicevox_start':
+                self.voicevox_start()
+            elif event == 'voicevox_stop':
+                self.TTS[self.voicevox.label].stop()
+            elif event == 'voicevox_modify':
+                self.voicevox_modify()
 
             # 设置界面
             elif event.startswith('save'):
@@ -320,8 +329,35 @@ class Main_Window:
         # 去除垃圾字符
         garbage_chars = self.config['garbage_chars']
         if len(garbage_chars) > 0:
-            for i in re.split(r'\s+', self.config['garbage_chars']):
+            for i in re.split(r'\s+', garbage_chars):
                 text = text.replace(i, '')
+
+        # TTS 连续阅读条件
+        read = False
+
+        # 若文本包含连续阅读特征，则阅读
+        if self.config['TTS_continuous']:
+            TTS_continuous_feature = self.config['TTS_continuous_feature']
+            if len(TTS_continuous_feature) > 0:
+                for i in re.split(r'\s+', TTS_continuous_feature):
+                    if i in text:
+                        read = True
+                        break
+
+            # 判断文本是角色对话还是旁白，再判断是否阅读
+            if not read:
+                character = False
+                TTS_character_feature = self.config['TTS_character_feature']
+                if len(TTS_character_feature) > 0:
+                    for i in re.split(r'\s+', TTS_character_feature):
+                        if i in text:
+                            character = True
+                            break
+
+                if character and self.config['TTS_character']:
+                    read = True
+                elif not character and self.config['TTS_narration']:
+                    read = True
 
         # 正则表达式，若规则匹配正确，则拼接各个()的内容
         re_config = self.config['re']
@@ -333,11 +369,11 @@ class Main_Window:
                 if len(groups) > 0:
                     text = ''.join(groups)
 
-        self.text = text
-
         # 复制处理后的原文
         if self.config['copy']:
             copy(text)
+
+        self.text = text
 
         # 传给翻译器的原文去除换行符
         text = text.replace('\n', '')
@@ -353,12 +389,9 @@ class Main_Window:
                 '\n' + self.text + '\n\n', append=True
             )
 
-        # TTS阅读
-        for speaker_label in self.TTS:
-            speaker = self.TTS[speaker_label]
-            if speaker.working and speaker.constantly:
-                thread = Thread(target=speaker.read_text, args=(text,), daemon=True)
-                thread.start()
+        # TTS 阅读
+        if read:
+            self.read_curr_text()
 
         # 翻译器翻译
         for translator_label in self.translators:
@@ -367,19 +400,13 @@ class Main_Window:
                 textarea = None
                 if self.floating_working and translator.get_translate:
                     textarea = self.floating_window[translator.key]
-                elif self.textractor_working:
+                elif self.textractor.working:
                     textarea = self.main_window['textractor_text']
                 elif self.OCR_working:
                     textarea = self.main_window['OCR_text']
                 thread = Thread(
                     target=translator.thread,
-                    args=(
-                        text,
-                        self.text_translate,
-                        self.floating_working,
-                        textarea,
-                        self.game_focus,
-                    ),
+                    args=(text, self.floating_working, textarea, self.game_focus,),
                     daemon=True,
                 )
                 thread.start()
@@ -476,7 +503,6 @@ class Main_Window:
 
         # 更新当前游戏信息
         self.game_update_curr(game_pid, name)
-        self.main_window['textractor_process'].update(str(game_pid) + ' - ' + name)
 
         # 启动Textractor
         sleep(1)
@@ -490,17 +516,20 @@ class Main_Window:
         hook_code = self.main_window['game_hook_code'].get()
         if hook_code:
             sleep(1)
-            self.hook_code(game_pid, hook_code)
+            self.textractor.hook_code(game_pid, hook_code)
 
     # 更新正在运行的游戏信息
     def game_update_curr(self, pid, name):
         self.game_pid = pid
-
         self.game['curr_game_id'] = pid
         self.game['curr_game_name'] = name
         save_game(self.game)
 
         self.game_get_window()
+
+        if not self.textractor.app:
+            self.textractor_start()
+        self.main_window['textractor_process'].update(str(pid) + ' - ' + name)
 
     # 获取游戏的窗口
     def game_get_window(self):
@@ -523,7 +552,7 @@ class Main_Window:
         # 获取任务管理器中的应用列表的进程和pid
         rule = re.compile('(\d+)')
         cmd = 'powershell "gps | where {$_.MainWindowTitle } | select Id'
-        proc = Popen(cmd, shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+        proc = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
         for line in proc.stdout:
             try:
                 line = line.decode().strip()
@@ -539,21 +568,8 @@ class Main_Window:
 
         self.main_window['textractor_process'].update(values=processes)
 
-        if self.game_window:
-            game_process = str(self.game_pid) + ' - ' + self.game['curr_game_name']
-            self.main_window['textractor_process'].update(game_process)
-
-    # 固定钩子
-    def textractor_fix_hook(self):
-        rule = re.compile(r'^(\[.+?\])\s+(.+)$')
-        content = rule.match(self.main_window['textractor_hook'].get())
-        if content:
-            self.fixed_hook = content.group(1)
-
     # 启动按钮函数
     def textractor_start(self):
-        self.textractor_stop()
-
         TextractorCLI_path = os.path.join(
             self.config['textractor_path'], 'TextractorCLI.exe'
         )
@@ -562,87 +578,16 @@ class Main_Window:
             sg.Popup('提示', 'Textractor路径不正确', keep_on_top=True)
             return
 
+        self.textractor.start(
+            main_window=self.main_window, text_process=self.text_process
+        )
+
         # 启动时自动更新进程列表
         self.textractor_refresh_process_list()
 
-        textractor_thread = Thread(target=self.textractor_work, daemon=True)
-        textractor_thread.start()
-        self.textractor_working = True
-
-    # 终止按钮函数
-    def textractor_stop(self):
-        # 终止时将抓取界面清空
-        try:
-            self.cli.kill()
-        except:
-            pass
-
-        self.main_window['textractor_process'].update('')
-        self.main_window['textractor_process'].update(values=[])
-        self.main_window['textractor_hook'].update('')
-        self.main_window['textractor_hook'].update(values=[])
-        self.cli = None
-        self.textractor_working = False
-
-    # 以一定间隔读取cli.exe的输出
-    def textractor_work(self):
-        self.cli = Popen(
-            os.path.join(self.config['textractor_path'], 'TextractorCLI.exe'),
-            shell=True,
-            stdin=PIPE,
-            stdout=PIPE,
-            stderr=PIPE,
-            encoding='utf-16-le',
-        )
-        rule = re.compile(r'^(\[.+?\])\s?(.*)$')
-        hooks = {}
-        for line in iter(self.cli.stdout.readline, ''):
-            # 停止则跳出
-            if not self.textractor_working:
-                break
-            # 暂停则跳过
-            if self.textractor_pause:
-                continue
-
-            # 匹配每行的输出，分成钩子和内容的两部分
-            content = rule.match(line)
-            if content:
-                hook = content.group(1)
-                text = content.group(2)
-
-                if hooks.__contains__(hook) and hooks[hook] == line:
-                    continue
-
-                # 存入字典
-                hooks[hook] = line
-
-                # 将当前钩子修改为固定钩子，若未固定则读取界面钩子列表当前的钩子
-                textractor_hook = self.main_window['textractor_hook'].get()
-                curr_hook = None
-                if self.fixed_hook:
-                    curr_hook = self.fixed_hook
-                else:
-                    content = rule.match(textractor_hook)
-                    if content:
-                        curr_hook = content.group(1)
-
-                # 更新界面钩子列表
-                self.main_window['textractor_hook'].update(values=list(hooks.values()))
-                self.main_window['textractor_hook'].update(curr_hook)
-
-                # 读取所选钩子的内容
-                if curr_hook == hook:
-                    self.text_process(text)
-
-            sleep(float(self.config['textractor_interval']))
-
-    def attach(self, pid):
-        self.cli.stdin.write('attach -P' + str(pid) + '\n')
-        self.cli.stdin.flush()
-
     # Attach按钮函数
     def textractor_attach(self):
-        if not self.cli:
+        if not self.textractor.app:
             sg.Popup('提示', 'Textractor未启动', keep_on_top=True)
             return
 
@@ -655,23 +600,18 @@ class Main_Window:
             game_pid = int(pid[0])
             name = psutil.Process(self.game_pid).name()
 
-            self.attach(game_pid)
+            self.textractor.attach(game_pid)
             self.game_update_curr(game_pid, name)
         except:
             pass
 
-    def hook_code(self, pid, hook_code):
-        self.cli.stdin.write(hook_code + ' -P' + str(pid) + '\n')
-        self.cli.stdin.flush()
-
     # 特殊码按钮函数
     def textractor_hook_code(self):
-        if not self.cli:
+        if not self.textractor.app:
             sg.Popup('提示', 'Textractor未启动', keep_on_top=True)
             return
 
         layout = textractor_hook_code_layout
-
         window = sg.Window(
             '特殊码', layout, alpha_channel=self.config['alpha'], keep_on_top=True,
         )
@@ -688,7 +628,7 @@ class Main_Window:
                 if not rule.match(hook_code):
                     sg.Popup('提示', '特殊码格式不对', keep_on_top=True)
                 else:
-                    self.hook_code(self.game['curr_game_id'], hook_code)
+                    self.textractor.hook_code(self.game['curr_game_id'], hook_code)
                     sg.Popup('提示', '特殊码使用成功', keep_on_top=True)
                     break
 
@@ -832,37 +772,9 @@ class Main_Window:
     def OCR_stop(self):
         self.OCR_working = False
 
-    # Textractor和OCR的暂停按钮函数
-    def pause_or_resume(self):
-        button = None
-        if self.textractor_working:
-            self.textractor_pause = not self.textractor_pause
-
-            if self.floating_working:
-                button = self.floating_window['pause']
-            else:
-                button = self.main_window['textractor_pause']
-
-            if self.textractor_pause:
-                button.update('继续')
-            else:
-                button.update('暂停')
-        elif self.OCR_working:
-            self.OCR_pause = not self.OCR_pause
-
-            if self.floating_working:
-                button = self.floating_window['pause']
-            else:
-                button = self.main_window['OCR_pause']
-
-            if self.OCR_pause:
-                button.update('继续')
-            else:
-                button.update('暂停')
-
     # 有道启动按钮函数
     def youdao_start(self):
-        youdaodict_path = os.path.join(self.config['youdao_path'], 'YoudaoDict.exe')
+        youdaodict_path = self.translators[self.youdao.label].path_exe
         if not os.path.exists(youdaodict_path):
             sg.Popup('提示', '有道词典路径不正确', keep_on_top=True)
         else:
@@ -870,7 +782,7 @@ class Main_Window:
 
     # yukari启动按钮函数
     def yukari_start(self):
-        yukari_path = os.path.join(self.config['yukari_path'], 'VOICEROID.exe')
+        yukari_path = self.TTS[self.yukari.label].path_exe
         if not os.path.exists(yukari_path):
             sg.Popup('提示', 'Yukari路径不正确', keep_on_top=True)
         else:
@@ -878,7 +790,7 @@ class Main_Window:
 
     # tamiyasu启动按钮函数
     def tamiyasu_start(self):
-        tamiyasu_path = os.path.join(self.config['tamiyasu_path'], 'VOICEROID.exe')
+        tamiyasu_path = self.TTS[self.tamiyasu.label].path_exe
         if not os.path.exists(tamiyasu_path):
             sg.Popup('提示', 'Tamiyasu路径不正确', keep_on_top=True)
         else:
@@ -887,7 +799,6 @@ class Main_Window:
     # VOICEROID2修改具体数值按钮函数
     def voiceroid2_modify(self):
         layout = voiceload2_layout(self.config)
-
         window = sg.Window(
             'VOICEROID2修改具体数值',
             layout,
@@ -910,6 +821,68 @@ class Main_Window:
 
         window.close()
 
+    # voicevox启动按钮函数
+    def voicevox_start(self):
+        voicevox_path = self.TTS[self.voicevox.label].path_exe
+        if not os.path.exists(voicevox_path):
+            sg.Popup('提示', 'VOICEVOX路径不正确', keep_on_top=True)
+        else:
+            self.TTS[self.voicevox.label].start(main_window=self.main_window)
+
+    # VOICEVOX修改具体数值按钮函数
+    def voicevox_modify(self):
+        layout = voicevox_layout(self.config)
+        window = sg.Window(
+            'voicevox修改具体数值',
+            layout,
+            alpha_channel=self.config['alpha'],
+            element_justification='center',
+            keep_on_top=True,
+        )
+
+        while True:
+            event, values = window.read()
+            if event is None:
+                break
+
+            elif event == '保存':
+                if self.save_config(values):
+                    for k, v in values.items():
+                        value = float(window[k].get())
+                        values[k] = value
+                        self.main_window[k].update(value)
+
+        window.close()
+
+    # 暂停按钮函数
+    def pause_or_resume(self):
+        button = None
+        if self.textractor.working:
+            self.textractor.pause = not self.textractor.pause
+
+            if self.floating_working:
+                button = self.floating_window['pause']
+            else:
+                button = self.main_window['textractor_pause']
+
+            if self.textractor.pause:
+                button.update('继续')
+            else:
+                button.update('暂停')
+        elif self.OCR_working:
+            self.OCR_pause = not self.OCR_pause
+
+            if self.floating_working:
+                button = self.floating_window['pause']
+            else:
+                button = self.main_window['OCR_pause']
+
+            if self.OCR_pause:
+                button.update('继续')
+            else:
+                button.update('暂停')
+
+    # 阅读按钮函数
     def read_curr_text(self):
         text = self.text.replace('\n', '')
 
@@ -925,6 +898,7 @@ class Main_Window:
         if flag:
             sg.Popup('提示', '请先启动TTS', keep_on_top=True)
 
+    # 快捷键设置
     def on_press(self, key):
         # ; -> 暂停
         # ' -> 阅读当前文本
@@ -990,11 +964,10 @@ class Main_Window:
         self.floating_window = None
         self.floating_working = False
 
+        self.main_window.Normal()
         # 更新主界面的暂停状态
         self.pause_or_resume()
         self.pause_or_resume()
-
-        self.main_window.Normal()
 
 
 if __name__ == '__main__':

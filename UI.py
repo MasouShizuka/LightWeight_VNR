@@ -9,6 +9,7 @@ from Translator.jbeijing import jbeijing_translate
 
 
 font_name = 'Microsoft Yahei'
+font_size = 15
 
 
 def UI(config, **kw):
@@ -177,8 +178,8 @@ def UI(config, **kw):
                 [
                     [
                         sg.Text('有道词典：', size=(8, 1)),
-                        sg.Button('启动有道', key='youdao_start'),
-                        sg.Button('终止有道', key='youdao_stop', pad=(20, 0)),
+                        sg.Button('启动', key='youdao_start'),
+                        sg.Button('终止', key='youdao_stop', pad=(20, 0)),
                     ],
                     [
                         sg.Text('路径：', size=(8, 1)),
@@ -264,6 +265,49 @@ def UI(config, **kw):
         ],
     ]
 
+    TTS_general = [
+        [
+            sg.Frame(
+                '通用',
+                [
+                    [
+                        sg.Text('连续阅读：', size=(12, 1)),
+                        sg.Checkbox(
+                            '启用',
+                            key='TTS_continuous',
+                            default=config['TTS_continuous'],
+                        ),
+                    ],
+                    [
+                        sg.Text('连续阅读特征：', size=(12, 1)),
+                        sg.Input(
+                            key='TTS_continuous_feature',
+                            default_text=config['TTS_continuous_feature'],
+                            size=(50, 1),
+                        ),
+                    ],
+                    [
+                        sg.Text('角色对话特征：', size=(12, 1)),
+                        sg.Input(
+                            key='TTS_character_feature',
+                            default_text=config['TTS_character_feature'],
+                            size=(50, 1),
+                        ),
+                    ],
+                    [
+                        sg.Text('连续阅读内容：', size=(12, 1)),
+                        sg.Checkbox(
+                            '角色', key='TTS_character', default=config['TTS_character'],
+                        ),
+                        sg.Checkbox(
+                            '旁白', key='TTS_narration', default=config['TTS_narration'],
+                        ),
+                    ],
+                ],
+            ),
+        ],
+    ]
+
     TTS_yukari = [
         [
             sg.Frame(
@@ -271,8 +315,8 @@ def UI(config, **kw):
                 [
                     [
                         sg.Text('Yukari：', size=(8, 1)),
-                        sg.Button('启动Yukari', key='yukari_start'),
-                        sg.Button('终止Yukari', key='yukari_stop', pad=(20, 0)),
+                        sg.Button('启动', key='yukari_start'),
+                        sg.Button('终止', key='yukari_stop', pad=(20, 0)),
                     ],
                     [
                         sg.Text('路径：', size=(8, 1)),
@@ -282,25 +326,6 @@ def UI(config, **kw):
                             size=(50, 1),
                         ),
                         sg.FolderBrowse('目录', key='yukari_dir', font=(font_name, 10)),
-                    ],
-                    [
-                        sg.Text('连续阅读：', size=(8, 1)),
-                        sg.Checkbox(
-                            '启用',
-                            key='yukari_constantly',
-                            default=config['yukari_constantly'],
-                        ),
-                    ],
-                    [
-                        sg.Text('阅读内容：', size=(8, 1)),
-                        sg.Checkbox(
-                            '旁白', key='yukari_aside', default=config['yukari_aside'],
-                        ),
-                        sg.Checkbox(
-                            '角色',
-                            key='yukari_character',
-                            default=config['yukari_character'],
-                        ),
                     ],
                 ],
             ),
@@ -314,8 +339,8 @@ def UI(config, **kw):
                 [
                     [
                         sg.Text('Tamiyasu：', size=(8, 1)),
-                        sg.Button('启动Tamiyasu', key='tamiyasu_start'),
-                        sg.Button('终止Tamiyasu', key='tamiyasu_stop', pad=(20, 0)),
+                        sg.Button('启动', key='tamiyasu_start'),
+                        sg.Button('终止', key='tamiyasu_stop', pad=(20, 0)),
                     ],
                     [
                         sg.Text('路径：', size=(8, 1)),
@@ -325,27 +350,6 @@ def UI(config, **kw):
                             size=(50, 1),
                         ),
                         sg.FolderBrowse('目录', key='tamiyasu_dir', font=(font_name, 10)),
-                    ],
-                    [
-                        sg.Text('连续阅读：', size=(8, 1)),
-                        sg.Checkbox(
-                            '启用',
-                            key='tamiyasu_constantly',
-                            default=config['tamiyasu_constantly'],
-                        ),
-                    ],
-                    [
-                        sg.Text('阅读内容：', size=(8, 1)),
-                        sg.Checkbox(
-                            '旁白',
-                            key='tamiyasu_aside',
-                            default=config['tamiyasu_aside'],
-                        ),
-                        sg.Checkbox(
-                            '角色',
-                            key='tamiyasu_character',
-                            default=config['tamiyasu_character'],
-                        ),
                     ],
                 ],
             ),
@@ -375,7 +379,7 @@ def UI(config, **kw):
                         ),
                     ],
                     [
-                        sg.Text('启用Voice： ', size=(12, 1)),
+                        sg.Text('启用Voice：', size=(12, 1)),
                         sg.Combo(
                             voiceroid2.voice_list,
                             key='voiceroid2_voice_selected',
@@ -563,25 +567,175 @@ def UI(config, **kw):
                             element_justification='center',
                         ),
                     ],
+                ],
+            ),
+        ],
+    ]
+
+    TTS_voicevox = [
+        [
+            sg.Frame(
+                'VOICEVOX',
+                [
                     [
-                        sg.Text('连续阅读：', size=(12, 1)),
-                        sg.Checkbox(
-                            '启用',
-                            key='voiceroid2_constantly',
-                            default=config['voiceroid2_constantly'],
+                        sg.Text('VOICEVOX：', size=(12, 1)),
+                        sg.Button('启动', key='voicevox_start'),
+                        sg.Button('终止', key='voicevox_stop', pad=(20, 0)),
+                    ],
+                    [
+                        sg.Text('路径：', size=(12, 1)),
+                        sg.Input(
+                            key='voicevox_path',
+                            default_text=config['voicevox_path'],
+                            size=(50, 1),
+                        ),
+                        sg.FolderBrowse('目录', key='voicevox_dir', font=(font_name, 10)),
+                    ],
+                    [
+                        sg.Text('启用Speaker：', size=(12, 1)),
+                        sg.Combo(
+                            [],
+                            key='voicevox_speaker_selected',
+                            default_value=config['voicevox_speaker_selected'],
+                            readonly=True,
+                            size=(50, 1),
                         ),
                     ],
                     [
-                        sg.Text('阅读内容：', size=(12, 1)),
-                        sg.Checkbox(
-                            '旁白',
-                            key='voiceroid2_aside',
-                            default=config['voiceroid2_aside'],
-                        ),
-                        sg.Checkbox(
-                            '角色',
-                            key='voiceroid2_character',
-                            default=config['voiceroid2_character'],
+                        sg.Frame(
+                            '参数设置',
+                            [
+                                [
+                                    sg.Column(
+                                        [
+                                            [
+                                                sg.Slider(
+                                                    key='voicevox_speed_scale',
+                                                    default_value=config[
+                                                        'voicevox_speed_scale'
+                                                    ],
+                                                    font=(font_name, 8),
+                                                    orientation='v',
+                                                    range=(0.5, 2.0),
+                                                    resolution=0.01,
+                                                    size=(10, 10),
+                                                    tick_interval=0.5,
+                                                ),
+                                            ],
+                                            [sg.Text('話速', font=(font_name, 8)),],
+                                        ],
+                                        element_justification='right',
+                                        pad=(15, 0),
+                                    ),
+                                    sg.Column(
+                                        [
+                                            [
+                                                sg.Slider(
+                                                    key='voicevox_pitch_scale',
+                                                    default_value=config[
+                                                        'voicevox_pitch_scale'
+                                                    ],
+                                                    font=(font_name, 8),
+                                                    orientation='v',
+                                                    range=(-0.15, 0.15),
+                                                    resolution=0.01,
+                                                    size=(10, 10),
+                                                    tick_interval=0.1,
+                                                ),
+                                            ],
+                                            [sg.Text('音高', font=(font_name, 8)),],
+                                        ],
+                                        element_justification='right',
+                                        pad=(15, 0),
+                                    ),
+                                    sg.Column(
+                                        [
+                                            [
+                                                sg.Slider(
+                                                    key='voicevox_intonation_scale',
+                                                    default_value=config[
+                                                        'voicevox_intonation_scale'
+                                                    ],
+                                                    font=(font_name, 8),
+                                                    orientation='v',
+                                                    range=(0, 2.0),
+                                                    resolution=0.01,
+                                                    size=(10, 10),
+                                                    tick_interval=0.5,
+                                                ),
+                                            ],
+                                            [sg.Text('抑揚', font=(font_name, 8)),],
+                                        ],
+                                        element_justification='right',
+                                        pad=(15, 0),
+                                    ),
+                                    sg.Column(
+                                        [
+                                            [
+                                                sg.Slider(
+                                                    key='voicevox_volume_scale',
+                                                    default_value=config[
+                                                        'voicevox_volume_scale'
+                                                    ],
+                                                    font=(font_name, 8),
+                                                    orientation='v',
+                                                    range=(0, 2.0),
+                                                    resolution=0.01,
+                                                    size=(10, 10),
+                                                    tick_interval=0.5,
+                                                ),
+                                            ],
+                                            [sg.Text('音量', font=(font_name, 8)),],
+                                        ],
+                                        element_justification='right',
+                                        pad=(15, 0),
+                                    ),
+                                    sg.Column(
+                                        [
+                                            [
+                                                sg.Slider(
+                                                    key='voicevox_pre_phoneme_length',
+                                                    default_value=config[
+                                                        'voicevox_pre_phoneme_length'
+                                                    ],
+                                                    font=(font_name, 8),
+                                                    orientation='v',
+                                                    range=(0, 1.5),
+                                                    resolution=0.01,
+                                                    size=(10, 10),
+                                                    tick_interval=0.5,
+                                                ),
+                                            ],
+                                            [sg.Text('開始無音', font=(font_name, 8)),],
+                                        ],
+                                        element_justification='right',
+                                        pad=(15, 0),
+                                    ),
+                                    sg.Column(
+                                        [
+                                            [
+                                                sg.Slider(
+                                                    key='voicevox_post_phoneme_length',
+                                                    default_value=config[
+                                                        'voicevox_post_phoneme_length'
+                                                    ],
+                                                    font=(font_name, 8),
+                                                    orientation='v',
+                                                    range=(0, 1.5),
+                                                    resolution=0.01,
+                                                    size=(10, 10),
+                                                    tick_interval=0.5,
+                                                ),
+                                            ],
+                                            [sg.Text('終了無音', font=(font_name, 8)),],
+                                        ],
+                                        element_justification='right',
+                                        pad=(15, 0),
+                                    ),
+                                ],
+                                [sg.Button('修改具体数值', key='voicevox_modify'),],
+                            ],
+                            element_justification='center',
                         ),
                     ],
                 ],
@@ -597,9 +751,11 @@ def UI(config, **kw):
                         sg.TabGroup(
                             [
                                 [
+                                    sg.Tab('通用', TTS_general),
                                     sg.Tab('Yukari', TTS_yukari),
                                     sg.Tab('Tamiyasu', TTS_tamiyasu),
                                     sg.Tab('VOICEROID2', TTS_voiceroid2),
+                                    sg.Tab('VOICEVOX', TTS_voicevox),
                                 ]
                             ],
                             tab_location='lefttop',
@@ -976,6 +1132,62 @@ def voiceload2_layout(config):
             sg.Input(
                 key='voiceroid2_pause_sentence',
                 default_text=str(config['voiceroid2_pause_sentence']),
+                size=(10, 1),
+            ),
+        ],
+        [sg.Button('保存'),],
+    ]
+
+    return layout
+
+
+def voicevox_layout(config):
+    layout = [
+        [
+            sg.Text('話速：', size=(8, 1)),
+            sg.Input(
+                key='voicevox_speed_scale',
+                default_text=str(config['voicevox_speed_scale']),
+                size=(10, 1),
+            ),
+        ],
+        [
+            sg.Text('音高：', size=(8, 1)),
+            sg.Input(
+                key='voicevox_intonation_scale',
+                default_text=str(config['voicevox_intonation_scale']),
+                size=(10, 1),
+            ),
+        ],
+        [
+            sg.Text('抑揚：', size=(8, 1)),
+            sg.Input(
+                key='voicevox_intonation_scale',
+                default_text=str(config['voicevox_intonation_scale']),
+                size=(10, 1),
+            ),
+        ],
+        [
+            sg.Text('音量：', size=(8, 1)),
+            sg.Input(
+                key='voicevox_volume_sclae',
+                default_text=str(config['voicevox_volume_scale']),
+                size=(10, 1),
+            ),
+        ],
+        [
+            sg.Text('開始無音：', size=(8, 1)),
+            sg.Input(
+                key='voicevox_pre_phoneme_length',
+                default_text=str(config['voicevox_pre_phoneme_length']),
+                size=(10, 1),
+            ),
+        ],
+        [
+            sg.Text('終了無音：', size=(8, 1)),
+            sg.Input(
+                key='voicevox_post_phoneme_length',
+                default_text=str(config['voicevox_post_phoneme_length']),
                 size=(10, 1),
             ),
         ],

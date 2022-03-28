@@ -56,9 +56,7 @@ def start_directly(game_path):
 def start_with_locale_emulator(locale_emulator_path, game_path, game_name):
     leproc_path = os.path.join(locale_emulator_path, 'LEProc.exe')
     try:
-        Popen(
-            r'"' + leproc_path + r'"' + r' "' + game_path + r'"', shell=True,
-        )
+        Popen(r'"' + leproc_path + r'"' + r' "' + game_path + r'"',)
         i = 0
         while i < 10:
             for proc in psutil.process_iter():
