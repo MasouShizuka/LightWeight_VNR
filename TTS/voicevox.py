@@ -70,7 +70,12 @@ class VOICEVOX(TTS):
 
     def thread(self, main_window=None):
         self.app = Popen(
-            self.path_exe, stdin=PIPE, stdout=PIPE, stderr=PIPE, encoding='utf-8',
+            self.path_exe,
+            stdin=PIPE,
+            stdout=PIPE,
+            stderr=PIPE,
+            shell=True,
+            encoding='utf-8',
         )
         for line in iter(self.app.stderr.readline, ''):
             if 'Application startup complete' in line:

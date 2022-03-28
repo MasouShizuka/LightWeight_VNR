@@ -504,13 +504,9 @@ class Main_Window:
         # 更新当前游戏信息
         self.game_update_curr(game_pid, name)
 
-        # 启动Textractor
-        sleep(1)
-        self.textractor_start()
-
         # 注入dll
         sleep(1)
-        self.attach(game_pid)
+        self.textractor.attach(game_pid)
 
         # 若游戏有特殊码，则写入
         hook_code = self.main_window['game_hook_code'].get()
@@ -552,7 +548,7 @@ class Main_Window:
         # 获取任务管理器中的应用列表的进程和pid
         rule = re.compile('(\d+)')
         cmd = 'powershell "gps | where {$_.MainWindowTitle } | select Id'
-        proc = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+        proc = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True)
         for line in proc.stdout:
             try:
                 line = line.decode().strip()

@@ -50,7 +50,12 @@ class Textractor:
     # 以一定间隔读取每一行的输出
     def thread(self, main_window, text_process):
         self.app = Popen(
-            self.path_exe, stdin=PIPE, stdout=PIPE, stderr=PIPE, encoding='utf-16-le',
+            self.path_exe,
+            stdin=PIPE,
+            stdout=PIPE,
+            stderr=PIPE,
+            shell=True,
+            encoding='utf-16-le',
         )
         hooks = {}
         for line in iter(self.app.stdout.readline, ''):
