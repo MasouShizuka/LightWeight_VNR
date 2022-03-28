@@ -19,6 +19,7 @@ class VOICEVOX(TTS):
     def __init__(self, config):
         self.working = False
 
+        self.url = 'http://127.0.0.1:50021'
         self.session = None
         self.speakers = None
         self.speaker_selected_id = None
@@ -95,7 +96,7 @@ class VOICEVOX(TTS):
     def get_speakers(self):
         try:
             r = self.session.get(
-                'http://localhost:50021/speakers', timeout=(10.0, 300.0),
+                f'{self.url}/speakers', timeout=(10.0, 300.0),
             )
             if r.status_code == 200:
                 self.speakers = {}
@@ -113,7 +114,7 @@ class VOICEVOX(TTS):
         try:
             audio_query_params = {'text': text, 'speaker': self.speaker_selected_id}
             r = self.session.post(
-                'http://localhost:50021/audio_query',
+                f'{self.url}/audio_query',
                 params=audio_query_params,
                 timeout=(10.0, 300.0),
             )
@@ -124,7 +125,7 @@ class VOICEVOX(TTS):
 
                 synthesis_params = {'speaker': self.speaker_selected_id}
                 r = self.session.post(
-                    'http://localhost:50021/synthesis',
+                    f'{self.url}/synthesis',
                     data=json.dumps(audio_query),
                     params=synthesis_params,
                     timeout=(10.0, 300.0),

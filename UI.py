@@ -1154,8 +1154,8 @@ def voicevox_layout(config):
         [
             sg.Text('音高：', size=(8, 1)),
             sg.Input(
-                key='voicevox_intonation_scale',
-                default_text=str(config['voicevox_intonation_scale']),
+                key='voicevox_pitch_scale',
+                default_text=str(config['voicevox_pitch_scale']),
                 size=(10, 1),
             ),
         ],
@@ -1170,7 +1170,7 @@ def voicevox_layout(config):
         [
             sg.Text('音量：', size=(8, 1)),
             sg.Input(
-                key='voicevox_volume_sclae',
+                key='voicevox_volume_scale',
                 default_text=str(config['voicevox_volume_scale']),
                 size=(10, 1),
             ),
