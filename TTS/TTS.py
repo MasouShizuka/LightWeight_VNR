@@ -9,3 +9,6 @@ class TTS:
 
     def read(self, text):
         pass
+
+    def stop(self):
+        pass

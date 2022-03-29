@@ -92,11 +92,9 @@ class Main_Window:
         self.text_unprocessed = ''
         self.text = ''
 
-        # JBeijing相关变量
+        # 翻译器相关变量
         self.jbeijing = JBeijing(self.config)
-        # 有道相关变量
         self.youdao = Youdao(self.config)
-        # 百度相关变量
         self.baidu = Baidu(self.config)
 
         self.translators = {
@@ -122,7 +120,7 @@ class Main_Window:
         self.floating_working = False
         self.floating_window = None
 
-        # 添加快捷键
+        # 快捷键监听
         self.listener = keyboard.Listener(on_press=self.on_press)
         self.listener.start()
 
@@ -136,11 +134,13 @@ class Main_Window:
             resizable=True,
         )
 
+        # 若游戏正在运行，则更新信息
         event, values = self.main_window.read(timeout=0)
         if running:
             self.game_update_curr(
                 self.game['curr_game_id'], self.game['curr_game_name']
             )
+
         while True:
             event, values = self.main_window.read()
             if event is None:
@@ -155,6 +155,7 @@ class Main_Window:
                 self.game_delete_game()
             elif event == 'game_start':
                 self.game_start_game()
+
             # 抓取界面
             elif event == 'textractor_refresh':
                 self.textractor_refresh_process_list()
@@ -176,9 +177,6 @@ class Main_Window:
                 self.OCR_start()
             elif event == 'OCR_stop':
                 self.OCR_stop()
-
-            elif 'pause' in event:
-                self.pause_or_resume()
 
             # 翻译界面
             elif event == 'youdao_start':
@@ -212,19 +210,16 @@ class Main_Window:
             elif event.startswith('floating'):
                 self.floating()
 
+            elif 'pause' in event:
+                self.pause_or_resume()
+
         # 退出程序时，关闭所有打开的程序
         for translator_label in self.translators:
             translator = self.translators[translator_label]
-            try:
-                translator.stop()
-            except:
-                pass
+            translator.stop()
         for speaker_label in self.TTS:
             speaker = self.TTS[speaker_label]
-            try:
-                speaker.stop()
-            except:
-                pass
+            speaker.stop()
 
         if os.path.exists('Screenshot.png'):
             os.remove('Screenshot.png')
@@ -243,12 +238,12 @@ class Main_Window:
                 if self.config.__contains__(k):
                     # 更新界面透明度
                     if k == 'alpha':
-                        self.main_window.SetAlpha(v)
+                        self.main_window.set_alpha(v)
                     # 更新界面置顶状态
                     elif k == 'top':
                         self.main_window.TKroot.wm_attributes("-topmost", v)
-                    else:
-                        self.config[k] = v
+
+                    self.config[k] = v
 
             # 更新Tesseract_OCR路径
             pytesseract.pytesseract.tesseract_cmd = os.path.join(
@@ -514,7 +509,7 @@ class Main_Window:
             sleep(1)
             self.textractor.hook_code(game_pid, hook_code)
 
-    # 更新正在运行的游戏信息
+    # 更新正在运行的游戏信息，并启动 Textractor
     def game_update_curr(self, pid, name):
         self.game_pid = pid
         self.game['curr_game_id'] = pid
@@ -530,8 +525,11 @@ class Main_Window:
     # 获取游戏的窗口
     def game_get_window(self):
         if self.game_pid:
-            app = Application(backend='uia').connect(process=self.game_pid)
-            self.game_window = app.top_window()
+            try:
+                app = Application(backend='uia').connect(process=self.game_pid)
+                self.game_window = app.top_window()
+            except:
+                pass
 
     # 聚焦游戏窗口
     def game_focus(self):
@@ -543,14 +541,13 @@ class Main_Window:
 
     # 刷新按钮函数
     def textractor_refresh_process_list(self):
-        processes = []
-
         # 获取任务管理器中的应用列表的进程和pid
         rule = re.compile('(\d+)')
         cmd = 'powershell "gps | where {$_.MainWindowTitle } | select Id'
-        proc = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True)
-        for line in proc.stdout:
-            try:
+        try:
+            processes = []
+            proc = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True)
+            for line in proc.stdout:
                 line = line.decode().strip()
                 result = rule.match(line)
                 if result:
@@ -559,10 +556,10 @@ class Main_Window:
                     process = id + ' - ' + process_name
 
                     processes.append(process)
-            except:
-                pass
 
-        self.main_window['textractor_process'].update(values=processes)
+            self.main_window['textractor_process'].update(values=processes)
+        except:
+            pass
 
     # 启动按钮函数
     def textractor_start(self):
@@ -574,12 +571,12 @@ class Main_Window:
             sg.Popup('提示', 'Textractor路径不正确', keep_on_top=True)
             return
 
+        # 启动时自动更新进程列表
+        self.textractor_refresh_process_list()
+
         self.textractor.start(
             main_window=self.main_window, text_process=self.text_process
         )
-
-        # 启动时自动更新进程列表
-        self.textractor_refresh_process_list()
 
     # Attach按钮函数
     def textractor_attach(self):
@@ -620,13 +617,16 @@ class Main_Window:
                 break
 
             elif event == '使用':
-                hook_code = window['hook_code'].get()
-                if not rule.match(hook_code):
-                    sg.Popup('提示', '特殊码格式不对', keep_on_top=True)
-                else:
-                    self.textractor.hook_code(self.game['curr_game_id'], hook_code)
-                    sg.Popup('提示', '特殊码使用成功', keep_on_top=True)
-                    break
+                try:
+                    hook_code = window['hook_code'].get()
+                    if not rule.match(hook_code):
+                        sg.Popup('提示', '特殊码格式不对', keep_on_top=True)
+                    else:
+                        self.textractor.hook_code(self.game['curr_game_id'], hook_code)
+                        sg.Popup('提示', '特殊码使用成功', keep_on_top=True)
+                        break
+                except:
+                    pass
 
         window.close()
 

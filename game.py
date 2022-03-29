@@ -44,27 +44,29 @@ def load_game():
 
 # 直接启动游戏
 def start_directly(game_path):
-    try:
-        p = Popen(game_path, shell=False)
-        return p.pid
-    except:
-        pass
+    if os.path.exists(game_path):
+        try:
+            p = Popen(game_path, shell=False)
+            return p.pid
+        except:
+            pass
     return None
 
 
 # 用 Locale Emulator 打开游戏
 def start_with_locale_emulator(locale_emulator_path, game_path, game_name):
     leproc_path = os.path.join(locale_emulator_path, 'LEProc.exe')
-    try:
-        Popen(r'"' + leproc_path + r'"' + r' "' + game_path + r'"', shell=True)
-        i = 0
-        while i < 10:
-            for proc in psutil.process_iter():
-                process = proc.as_dict(attrs=['pid', 'name'])
-                if process['name'] == game_name:
-                    return process['pid']
-            sleep(1)
-            i += 1
-    except:
-        pass
+    if os.path.exists(leproc_path) and os.path.exists(game_path):
+        try:
+            Popen(r'"' + leproc_path + r'"' + r' "' + game_path + r'"', shell=True)
+            i = 0
+            while i < 10:
+                for proc in psutil.process_iter():
+                    process = proc.as_dict(attrs=['pid', 'name'])
+                    if process['name'] == game_name:
+                        return process['pid']
+                sleep(1)
+                i += 1
+        except:
+            pass
     return None

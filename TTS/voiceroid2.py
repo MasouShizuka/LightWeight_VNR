@@ -24,9 +24,12 @@ class VOICEROID2(TTS):
         self.voice_list = []
         if self.working:
             self.load_pyvcroid2(config)
-        if main_window:
-            main_window['voiceroid2_voice_selected'].update(values=self.voice_list)
-            main_window['voiceroid2_voice_selected'].update(self.voice_selected)
+        try:
+            if main_window:
+                main_window['voiceroid2_voice_selected'].update(values=self.voice_list)
+                main_window['voiceroid2_voice_selected'].update(self.voice_selected)
+        except:
+            pass
 
     def load_pyvcroid2(self, config):
         try:

@@ -70,34 +70,38 @@ class VOICEVOX(TTS):
             os.remove('audio.wav')
 
     def thread(self, main_window=None):
-        self.app = Popen(
-            self.path_exe,
-            stdin=PIPE,
-            stdout=PIPE,
-            stderr=PIPE,
-            shell=True,
-            encoding='utf-8',
-        )
-        for line in iter(self.app.stderr.readline, ''):
-            if 'Application startup complete' in line:
-                self.startup_complete(main_window=main_window)
-                break
+        try:
+            self.app = Popen(
+                self.path_exe,
+                stdin=PIPE,
+                stdout=PIPE,
+                stderr=PIPE,
+                shell=True,
+                encoding='utf-8',
+            )
+            for line in iter(self.app.stderr.readline, ''):
+                if 'Application startup complete' in line:
+                    self.startup_complete(main_window=main_window)
+                    break
+        except:
+            pass
 
     def startup_complete(self, main_window=None):
         self.session = requests.Session()
         self.get_speakers()
         self.speaker_selected_id = self.speakers[self.speaker_selected]
-        if main_window:
-            main_window['voicevox_speaker_selected'].update(
-                values=list(self.speakers.keys())
-            )
-            main_window['voicevox_speaker_selected'].update(self.speaker_selected)
+        try:
+            if main_window:
+                main_window['voicevox_speaker_selected'].update(
+                    values=list(self.speakers.keys())
+                )
+                main_window['voicevox_speaker_selected'].update(self.speaker_selected)
+        except:
+            pass
 
     def get_speakers(self):
         try:
-            r = self.session.get(
-                f'{self.url}/speakers', timeout=(10.0, 300.0),
-            )
+            r = self.session.get(f'{self.url}/speakers', timeout=(10.0, 300.0),)
             if r.status_code == 200:
                 self.speakers = {}
                 speakers_data = r.json()
