@@ -37,7 +37,6 @@ class VOICEVOX(TTS):
     def update_config(self, config, **kw):
         self.path = config['voicevox_path']
         self.path_exe = os.path.join(self.path, 'run.exe')
-
         self.speaker_selected = config['voicevox_speaker_selected']
         self.params['speedScale'] = config['voicevox_speed_scale']
         self.params['pitchScale'] = config['voicevox_pitch_scale']
@@ -101,7 +100,10 @@ class VOICEVOX(TTS):
 
     def get_speakers(self):
         try:
-            r = self.session.get(f'{self.url}/speakers', timeout=(10.0, 300.0),)
+            r = self.session.get(
+                f'{self.url}/speakers',
+                timeout=(10.0, 300.0),
+            )
             if r.status_code == 200:
                 self.speakers = {}
                 speakers_data = r.json()

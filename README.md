@@ -4,10 +4,9 @@
 
 ## 截图
 
-- 抓取界面
 ![screenshot_01](Screenshot/screenshot_01.png)
-- 小窗口
 ![screenshot_02](Screenshot/screenshot_02.png)
+![screenshot_03](Screenshot/screenshot_03.png)
 
 ---
 
@@ -46,40 +45,27 @@
 
 ### OCR
 
-- 设置`Tesseract-OCR路径`
-    - 确保该路径下至少包含：
-        <details>
-        <summary>展开查看</summary>
-        <pre>
-        <code>
-        ├── tessdata
-        │   ├── chi_sim.traineddata
-        │   ├── chi_sim_vert.traineddata
-        │   ├── chi_tra.traineddata
-        │   ├── chi_tra_vert.traineddata
-        │   ├── eng.traineddata
-        │   ├── jpn.traineddata
-        │   └── jpn_vert.traineddata
-        │
-        ├── libgcc_s_seh-1.dll
-        ├── libgif-7.dll
-        ├── libgomp-1.dll
-        ├── libjbig-2.dll
-        ├── libjpeg-8.dll
-        ├── liblept-5.dll
-        ├── liblzma-5.dll
-        ├── libopenjp2.dll
-        ├── libpng16-16.dll
-        ├── libstdc++-6.dll
-        ├── libtesseract-5.dll
-        ├── libtiff-5.dll
-        ├── libwebp-7.dll
-        ├── libwinpthread-1.dll
-        ├── tesseract.exe
-        └── zlib1.dll
-        </code>
-        </pre>
-        </details>
+1. 从 [Tesseract at UB Mannheim](https://github.com/UB-Mannheim/tesseract/wiki) 下载安装包
+    - 可安装或用 `7-zip` 提取到指定文件夹
+2. 从 [tessdata](https://github.com/tesseract-ocr/tessdata/releases) 下载 `tessdata`
+    - 将需要的语言的 `traineddata` 复制到程序目录的 `tessdata` 目录下
+3. 确保 `tessdata` 目录下包含：
+    <details>
+    <summary>展开查看</summary>
+    <pre>
+    <code>
+    ├── tessdata
+    │   ├── chi_sim.traineddata
+    │   ├── chi_sim_vert.traineddata
+    │   ├── chi_tra.traineddata
+    │   ├── chi_tra_vert.traineddata
+    │   ├── eng.traineddata
+    │   ├── jpn.traineddata
+    │   └── jpn_vert.traineddata
+    ├── *
+    </code>
+    </pre>
+    </details>
 - `截取`屏幕上的某一区域，用鼠标划定区域，划定完按`Enter`
     - 截取完会直接显示截图图片和文本
     - 按`ESC`键退出截取界面
@@ -136,7 +122,7 @@
 
 #### VOICEVOX
 
-- 可从 [VOICEVOX](https://github.com/VOICEVOX/voicevox/releases) 下载
+1. 从 [VOICEVOX](https://github.com/VOICEVOX/voicevox/releases) 下载
 - 设置好`VOICEVOX路径`后，点击`启动`即可
 - 可选择自带的`Speaker`阅读
 - 可调整各项参数，同`VOICEVOX`软件界面
@@ -163,7 +149,7 @@
 ### 打包
 
 - 本项目可用`Pyinstaller`打包，命令：`pyinstaller -Fw main.py`
-    - 注意要在32位`Python`环境下，否则某些功能可能会不可用
+    - 注意要在`Python 32 bit`环境下，否则某些功能可能会不可用
 
 ---
 

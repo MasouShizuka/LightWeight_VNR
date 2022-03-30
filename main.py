@@ -7,7 +7,6 @@ from subprocess import Popen, PIPE
 
 import PySimpleGUI as sg
 import psutil
-from PIL import Image
 from pyautogui import position, screenshot, size
 from pynput import keyboard
 from pyperclip import copy
@@ -32,8 +31,7 @@ from game import (
 )
 from textractor import Textractor
 
-from OCR.tesseract_OCR import pytesseract, languages, tesseract_OCR
-from OCR.threshold_ways import threshold_ways
+from OCR.tesseract_OCR import Tesseract_OCR
 
 from Translator.jbeijing import JBeijing
 from Translator.youdao import Youdao
@@ -77,16 +75,7 @@ class Main_Window:
         self.textractor = Textractor(self.config)
 
         # OCR相关变量
-        pytesseract.pytesseract.tesseract_cmd = os.path.join(
-            self.config['tesseract_OCR_path'], 'tesseract.exe'
-        )
-        self.OCR_working = False
-        self.OCR_pause = False
-        self.screenshot = None
-        self.x1 = 0
-        self.y1 = 0
-        self.x2 = 0
-        self.y2 = 0
+        self.tesseract_OCR = Tesseract_OCR(self.config)
 
         # 文本相关变量
         self.text_unprocessed = ''
@@ -117,8 +106,8 @@ class Main_Window:
         }
 
         # 浮动窗口相关变量
-        self.floating_working = False
         self.floating_window = None
+        self.floating_working = False
 
         # 快捷键监听
         self.listener = keyboard.Listener(on_press=self.on_press)
@@ -127,7 +116,12 @@ class Main_Window:
         # 主窗口
         self.main_window = sg.Window(
             'LightWeight_VNR',
-            UI(self.config, games=self.games, voiceroid2=self.voiceroid2),
+            UI(
+                self.config,
+                games=self.games,
+                tesseract_OCR=self.tesseract_OCR,
+                voiceroid2=self.voiceroid2,
+            ),
             alpha_channel=self.config['alpha'],
             keep_on_top=self.config['top'],
             margins=(0, 0),
@@ -176,29 +170,29 @@ class Main_Window:
             elif event == 'OCR_start':
                 self.OCR_start()
             elif event == 'OCR_stop':
-                self.OCR_stop()
+                self.tesseract_OCR.stop()
 
             # 翻译界面
             elif event == 'youdao_start':
                 self.youdao_start()
             elif event == 'youdao_stop':
-                self.translators[self.youdao.label].stop()
+                self.youdao.stop()
 
             # 语音界面
             elif event == 'yukari_start':
                 self.yukari_start()
             elif event == 'yukari_stop':
-                self.TTS[self.yukari.label].stop()
+                self.yukari.stop()
             elif event == 'tamiyasu_start':
                 self.tamiyasu_start()
             elif event == 'tamiyasu_stop':
-                self.TTS[self.tamiyasu.label].stop()
+                self.tamiyasu.stop()
             elif event == 'voiceroid2_modify':
                 self.voiceroid2_modify()
             elif event == 'voicevox_start':
                 self.voicevox_start()
             elif event == 'voicevox_stop':
-                self.TTS[self.voicevox.label].stop()
+                self.voicevox.stop()
             elif event == 'voicevox_modify':
                 self.voicevox_modify()
 
@@ -214,6 +208,8 @@ class Main_Window:
                 self.pause_or_resume()
 
         # 退出程序时，关闭所有打开的程序
+        self.textractor.stop()
+        self.tesseract_OCR.stop()
         for translator_label in self.translators:
             translator = self.translators[translator_label]
             translator.stop()
@@ -223,8 +219,6 @@ class Main_Window:
 
         if os.path.exists('Screenshot.png'):
             os.remove('Screenshot.png')
-        if os.path.exists('Area.png'):
-            os.remove('Area.png')
 
         # 关闭主窗口
         self.main_window.close()
@@ -245,10 +239,11 @@ class Main_Window:
 
                     self.config[k] = v
 
-            # 更新Tesseract_OCR路径
-            pytesseract.pytesseract.tesseract_cmd = os.path.join(
-                self.config['tesseract_OCR_path'], 'tesseract.exe'
-            )
+            # Textractor更新设置
+            self.textractor.update_config(self.config)
+
+            # Tesseract_OCR更新设置
+            self.tesseract_OCR.update_config(self.config)
 
             # 各种翻译器更新设置
             for translator_label in self.translators:
@@ -296,6 +291,7 @@ class Main_Window:
                     text = text_one
         elif deduplication_aabbcc > 1:
             text = text[::deduplication_aabbcc]
+
         # 文本去重，abcabc -> abc
         deduplication_abcabc = int(self.config['deduplication_abcabc'])
         if self.config['deduplication_abcabc_auto']:
@@ -329,7 +325,6 @@ class Main_Window:
 
         # TTS 连续阅读条件
         read = False
-
         # 若文本包含连续阅读特征，则阅读
         if self.config['TTS_continuous']:
             TTS_continuous_feature = self.config['TTS_continuous_feature']
@@ -338,7 +333,6 @@ class Main_Window:
                     if i in text:
                         read = True
                         break
-
             # 判断文本是角色对话还是旁白，再判断是否阅读
             if not read:
                 character = False
@@ -348,7 +342,6 @@ class Main_Window:
                         if i in text:
                             character = True
                             break
-
                 if character and self.config['TTS_character']:
                     read = True
                 elif not character and self.config['TTS_narration']:
@@ -374,15 +367,20 @@ class Main_Window:
         text = text.replace('\n', '')
 
         # 更新浮动窗口的原文
-        if self.floating_working and self.config['floating_text_original']:
-            self.floating_window['text_original'].update(text)
-        # 更新抓取界面的原文
-        elif not self.floating_working:
-            self.main_window['textractor_text'].update('')
-            self.main_window['textractor_text'].update('原文：', append=True)
-            self.main_window['textractor_text'].update(
-                '\n' + self.text + '\n\n', append=True
-            )
+        if self.floating_working:
+            if self.config['floating_text_original']:
+                self.floating_window['text_original'].update(text)
+        # 更新抓取界面或者光学界面的原文
+        else:
+            textarea = None
+            if self.textractor.working:
+                textarea = self.main_window['textractor_text']
+            elif self.tesseract_OCR.working:
+                textarea = self.main_window['OCR_text']
+            if textarea:
+                textarea.update('')
+                textarea.update('原文：', append=True)
+                textarea.update('\n' + self.text + '\n\n', append=True)
 
         # TTS 阅读
         if read:
@@ -393,15 +391,21 @@ class Main_Window:
             translator = self.translators[translator_label]
             if translator.working:
                 textarea = None
-                if self.floating_working and translator.get_translate:
-                    textarea = self.floating_window[translator.key]
+                if self.floating_working:
+                    if translator.get_translate:
+                        textarea = self.floating_window[translator.key]
                 elif self.textractor.working:
                     textarea = self.main_window['textractor_text']
-                elif self.OCR_working:
+                elif self.tesseract_OCR.working:
                     textarea = self.main_window['OCR_text']
                 thread = Thread(
                     target=translator.thread,
-                    args=(text, self.floating_working, textarea, self.game_focus,),
+                    args=(
+                        text,
+                        self.floating_working,
+                        textarea,
+                        self.game_focus,
+                    ),
                     daemon=True,
                 )
                 thread.start()
@@ -442,7 +446,6 @@ class Main_Window:
                 game['hook_code'] = game_hook_code
                 game['start_mode'] = game_start_mode
                 save_game(self.game)
-
                 return
 
         # 若不存在，则添加到游戏列表
@@ -469,7 +472,6 @@ class Main_Window:
 
                 self.game['game_list'].remove(i)
                 save_game(self.game)
-
                 break
 
     # 启动游戏按钮函数
@@ -514,8 +516,8 @@ class Main_Window:
         self.game_pid = pid
         self.game['curr_game_id'] = pid
         self.game['curr_game_name'] = name
-        save_game(self.game)
 
+        save_game(self.game)
         self.game_get_window()
 
         if not self.textractor.app:
@@ -537,7 +539,10 @@ class Main_Window:
             self.game_get_window()
 
         if self.game_window:
-            self.game_window.set_focus()
+            try:
+                self.game_window.set_focus()
+            except:
+                pass
 
     # 刷新按钮函数
     def textractor_refresh_process_list(self):
@@ -563,11 +568,9 @@ class Main_Window:
 
     # 启动按钮函数
     def textractor_start(self):
-        TextractorCLI_path = os.path.join(
-            self.config['textractor_path'], 'TextractorCLI.exe'
-        )
-        texthook_path = os.path.join(self.config['textractor_path'], 'texthook.dll')
-        if not os.path.exists(TextractorCLI_path) or not os.path.exists(texthook_path):
+        if not os.path.exists(self.textractor.path_exe) or not os.path.exists(
+            self.textractor.path_dll
+        ):
             sg.Popup('提示', 'Textractor路径不正确', keep_on_top=True)
             return
 
@@ -606,7 +609,10 @@ class Main_Window:
 
         layout = textractor_hook_code_layout
         window = sg.Window(
-            '特殊码', layout, alpha_channel=self.config['alpha'], keep_on_top=True,
+            '特殊码',
+            layout,
+            alpha_channel=self.config['alpha'],
+            keep_on_top=True,
         )
 
         # 特殊码需满足特定的格式
@@ -632,6 +638,10 @@ class Main_Window:
 
     # 截取按钮函数
     def OCR_get_area(self):
+        if not os.path.exists(self.tesseract_OCR.path):
+            sg.Popup('提示', 'Tesseract-OCR路径不正确', keep_on_top=True)
+            return
+
         # 隐藏主窗口
         self.main_window.Hide()
 
@@ -665,7 +675,7 @@ class Main_Window:
         )
         screenshot_window.Maximize()
         graph = screenshot_window['graph']
-        graph.DrawImage('Screenshot.png', location=(0, full_size[1]))
+        graph.draw_image('Screenshot.png', location=(0, full_size[1]))
 
         dragging = False
         area = None
@@ -677,36 +687,47 @@ class Main_Window:
             # 鼠标按下，则记录起始坐标，并进入拖拽
             elif event == 'graph':
                 if not dragging:
-                    self.x1, self.y1 = position()
+                    x1, y1 = position()
                 dragging = True
             # 鼠标抬起，则记录终止坐标，并结束拖拽
             elif event == 'graph+UP':
-                self.x2, self.y2 = position()
+                x2, y2 = position()
                 dragging = False
-                graph.DeleteFigure(area)
-                area = graph.DrawRectangle(
-                    (self.x1, full_size[1] - self.y1),
-                    (self.x2, full_size[1] - self.y2),
+                graph.delete_figure(area)
+                area = graph.draw_rectangle(
+                    (x1, full_size[1] - y1),
+                    (x2, full_size[1] - y2),
                     line_color='red',
                 )
             # 若按下回车，则完成截取
             elif not event.strip():
                 screenshot_window.close()
-                if self.x1 > self.x2:
-                    self.x1, self.x2 = self.x2, self.x1
-                if self.y1 > self.y2:
-                    self.y1, self.y2 = self.y2, self.y1
-                self.OCR_work()
+
+                if x1 > x2:
+                    x1, x2 = x2, x1
+                if y1 > y2:
+                    y1, y2 = y2, y1
+                bbox = [
+                    x1,
+                    y1,
+                    x2 - x1,
+                    y2 - y1,
+                ]
+                self.tesseract_OCR.thread(
+                    main_window=self.main_window,
+                    text_process=self.text_process,
+                    bbox=bbox,
+                )
             # 若按下ESC，则退出
             elif event == 'Escape:27':
                 screenshot_window.close()
 
             # 若处于拖拽状态，则不断更新矩形的绘制
             if dragging:
-                graph.DeleteFigure(area)
+                graph.delete_figure(area)
                 x, y = position()
-                area = graph.DrawRectangle(
-                    (self.x1, full_size[1] - self.y1),
+                area = graph.draw_rectangle(
+                    (x1, full_size[1] - y1),
                     (x, full_size[1] - y),
                     line_color='red',
                 )
@@ -714,83 +735,39 @@ class Main_Window:
         # 恢复主窗口
         self.main_window.UnHide()
 
-    # 图片处理
-    def image_process(self):
-        im = Image.open("Area.png")
-        # 转成灰度图
-        im = im.convert("L")
-        # 按指定方式处理图片
-        im = threshold_ways[self.config['threshold_way']](im, self.config['threshold'])
-        im.save('Area.png')
-
-    # 截取矩形区域图片，进行图片处理，并进行文字识别
-    def OCR_work(self):
-        if not os.path.exists(self.config['tesseract_OCR_path']):
+    # 连续按钮函数
+    def OCR_start(self):
+        if not os.path.exists(self.tesseract_OCR.path):
             sg.Popup('提示', 'Tesseract-OCR路径不正确', keep_on_top=True)
             return
 
-        # 取得指定区域的图片
-        bbox = [
-            self.x1,
-            self.y1,
-            self.x2 - self.x1,
-            self.y2 - self.y1,
-        ]
-        im = screenshot(region=bbox)
-        im.save('Area.png')
-
-        # 界面显示图片
-        self.image_process()
-        self.main_window['OCR_image'].update('Area.png')
-
-        # 取得识别文本
-        im = Image.open('Area.png')
-        text_OCR = tesseract_OCR(im, languages[self.config['OCR_language']])
-
-        if self.text_process(text_OCR):
-            if not self.floating_working:
-                self.main_window['OCR_text'].update(self.text + '\n\n')
-
-    # OCR连续识别线程
-    def OCR_thread(self):
-        while self.OCR_working:
-            if not self.OCR_pause:
-                self.OCR_work()
-            sleep(float(self.config['OCR_interval']))
-
-    # 连续按钮函数
-    def OCR_start(self):
-        self.OCR_working = True
-        OCR_thread = Thread(target=self.OCR_thread, daemon=True)
-        OCR_thread.start()
-
-    # 结束按钮函数
-    def OCR_stop(self):
-        self.OCR_working = False
+        self.tesseract_OCR.start(
+            main_window=self.main_window, text_process=self.text_process
+        )
 
     # 有道启动按钮函数
     def youdao_start(self):
-        youdaodict_path = self.translators[self.youdao.label].path_exe
-        if not os.path.exists(youdaodict_path):
+        if not os.path.exists(self.youdao.path_exe):
             sg.Popup('提示', '有道词典路径不正确', keep_on_top=True)
-        else:
-            self.translators[self.youdao.label].start()
+            return
+
+        self.youdao.start()
 
     # yukari启动按钮函数
     def yukari_start(self):
-        yukari_path = self.TTS[self.yukari.label].path_exe
-        if not os.path.exists(yukari_path):
+        if not os.path.exists(self.yukari.path_exe):
             sg.Popup('提示', 'Yukari路径不正确', keep_on_top=True)
-        else:
-            self.TTS[self.yukari.label].start()
+            return
+
+        self.yukari.start()
 
     # tamiyasu启动按钮函数
     def tamiyasu_start(self):
-        tamiyasu_path = self.TTS[self.tamiyasu.label].path_exe
-        if not os.path.exists(tamiyasu_path):
+        if not os.path.exists(self.tamiyasu.path_exe):
             sg.Popup('提示', 'Tamiyasu路径不正确', keep_on_top=True)
-        else:
-            self.TTS[self.tamiyasu.label].start()
+            return
+
+        self.tamiyasu.start()
 
     # VOICEROID2修改具体数值按钮函数
     def voiceroid2_modify(self):
@@ -819,11 +796,11 @@ class Main_Window:
 
     # voicevox启动按钮函数
     def voicevox_start(self):
-        voicevox_path = self.TTS[self.voicevox.label].path_exe
-        if not os.path.exists(voicevox_path):
+        if not os.path.exists(self.voicevox.path_exe):
             sg.Popup('提示', 'VOICEVOX路径不正确', keep_on_top=True)
-        else:
-            self.TTS[self.voicevox.label].start(main_window=self.main_window)
+            return
+
+        self.voicevox.start(main_window=self.main_window)
 
     # VOICEVOX修改具体数值按钮函数
     def voicevox_modify(self):
@@ -865,15 +842,15 @@ class Main_Window:
                 button.update('继续')
             else:
                 button.update('暂停')
-        elif self.OCR_working:
-            self.OCR_pause = not self.OCR_pause
+        elif self.tesseract_OCR.working:
+            self.tesseract_OCR.pause = not self.tesseract_OCR.pause
 
             if self.floating_working:
                 button = self.floating_window['pause']
             else:
                 button = self.main_window['OCR_pause']
 
-            if self.OCR_pause:
+            if self.tesseract_OCR.pause:
                 button.update('继续')
             else:
                 button.update('暂停')

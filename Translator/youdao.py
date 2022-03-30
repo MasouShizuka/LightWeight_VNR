@@ -23,10 +23,9 @@ class Youdao(Translator):
         self.update_config(config)
 
     def update_config(self, config):
-        self.get_translate = config['youdao_get_translate']
-
         self.path = config['youdao_path']
         self.path_exe = os.path.join(self.path, 'YoudaoDict.exe')
+        self.get_translate = config['youdao_get_translate']
         self.interval = config['youdao_interval']
 
     def start(self):

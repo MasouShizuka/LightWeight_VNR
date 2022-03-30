@@ -17,7 +17,6 @@ class Baidu(Translator):
 
     def update_config(self, config):
         self.working = config['baidu']
-
         self.appid = config['baidu_appid']
         self.key = config['baidu_key']
 

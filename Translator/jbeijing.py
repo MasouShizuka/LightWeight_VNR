@@ -26,7 +26,6 @@ class JBeijing(Translator):
 
     def update_config(self, config):
         self.working = config['jbeijing']
-
         self.path = config['jbeijing_path']
         self.path_dll = os.path.join(self.path, DLL)
         self.to = jbeijing_to[config['jbeijing_to']]

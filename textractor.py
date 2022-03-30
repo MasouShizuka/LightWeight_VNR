@@ -18,7 +18,8 @@ class Textractor:
     def update_config(self, config):
         self.path = config['textractor_path']
         self.path_exe = os.path.join(self.path, 'TextractorCLI.exe')
-        self.interval = config['textractor_interval']
+        self.path_dll = os.path.join(self.path, 'texthook.dll')
+        self.interval = float(config['textractor_interval'])
 
     # 启动TR
     def start(self, main_window=None, text_process=None):
@@ -96,7 +97,7 @@ class Textractor:
                     if curr_hook == hook:
                         text_process(text)
 
-                sleep(float(self.interval))
+                sleep(self.interval)
         except:
             pass
 

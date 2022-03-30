@@ -2,7 +2,6 @@ import PySimpleGUI as sg
 
 from game import start_mode
 
-from OCR.tesseract_OCR import lang_translate
 from OCR.threshold_ways import threshold_name
 
 from Translator.jbeijing import jbeijing_translate
@@ -14,22 +13,43 @@ font_size = 15
 
 def UI(config, **kw):
     games = kw['games']
+    tesseract_OCR = kw['tesseract_OCR']
     voiceroid2 = kw['voiceroid2']
 
     game_list = [
-        [sg.Listbox(key='game_list', values=games, enable_events=True, size=(80, 10),)],
+        [
+            sg.Listbox(
+                key='game_list',
+                values=games,
+                enable_events=True,
+                size=(80, 10),
+            )
+        ],
     ]
 
     game_info_widget = sg.Column(
         [
             [
                 sg.Text('游戏名称：', size=(8, 1)),
-                sg.Input(key='game_name', default_text='', size=(72, 1),),
+                sg.Input(
+                    key='game_name',
+                    default_text='',
+                    size=(72, 1),
+                ),
             ],
             [
                 sg.Text('程序目录：', size=(8, 1)),
-                sg.Input(key='game_path', default_text='', size=(68, 1),),
-                sg.FileBrowse('目录', key='game_dir', font=(font_name, 10), size=(4, 1),),
+                sg.Input(
+                    key='game_path',
+                    default_text='',
+                    size=(68, 1),
+                ),
+                sg.FileBrowse(
+                    '目录',
+                    key='game_dir',
+                    font=(font_name, 10),
+                    size=(4, 1),
+                ),
             ],
             [
                 sg.Text('启动方式：', size=(8, 1)),
@@ -43,7 +63,11 @@ def UI(config, **kw):
             ],
             [
                 sg.Text('特殊码：', size=(8, 1)),
-                sg.Input(key='game_hook_code', default_text='', size=(72, 1),),
+                sg.Input(
+                    key='game_hook_code',
+                    default_text='',
+                    size=(72, 1),
+                ),
             ],
         ],
     )
@@ -64,8 +88,19 @@ def UI(config, **kw):
     ]
 
     game_layout = [
-        [sg.Frame('游戏列表', layout=game_list,)],
-        [sg.Frame('游戏信息', layout=game_info, element_justification='center',)],
+        [
+            sg.Frame(
+                '游戏列表',
+                layout=game_list,
+            )
+        ],
+        [
+            sg.Frame(
+                '游戏信息',
+                layout=game_info,
+                element_justification='center',
+            )
+        ],
     ]
 
     textractor_buttons = sg.Column(
@@ -82,12 +117,21 @@ def UI(config, **kw):
     textractor_layout = [
         [
             sg.Text('进程：', size=(4, 1)),
-            sg.Combo([], key='textractor_process', size=(70, 1),),
+            sg.Combo(
+                [],
+                key='textractor_process',
+                size=(70, 1),
+            ),
             sg.Button('刷新', key='textractor_refresh', pad=(20, 20)),
         ],
         [
             sg.Text('钩子：', size=(4, 1)),
-            sg.Combo([], key='textractor_hook', readonly=True, size=(70, 1),),
+            sg.Combo(
+                [],
+                key='textractor_hook',
+                readonly=True,
+                size=(70, 1),
+            ),
             sg.Button('固定', key='textractor_fix', pad=(20, 0)),
         ],
         [
@@ -107,7 +151,12 @@ def UI(config, **kw):
 
     OCR_display = sg.Column(
         [
-            [sg.Frame('截取区域', [[sg.Image('', key='OCR_image')]],)],
+            [
+                sg.Frame(
+                    '截取区域',
+                    [[sg.Image('', key='OCR_image')]],
+                )
+            ],
             [
                 sg.Frame(
                     '提取文本',
@@ -135,7 +184,10 @@ def UI(config, **kw):
     )
 
     OCR_layout = [
-        [OCR_display, OCR_buttons,],
+        [
+            OCR_display,
+            OCR_buttons,
+        ],
     ]
 
     translate_jbeijing = [
@@ -145,7 +197,11 @@ def UI(config, **kw):
                 [
                     [
                         sg.Text('JBeijing：', size=(8, 1)),
-                        sg.Checkbox('启用', key='jbeijing', default=config['jbeijing'],),
+                        sg.Checkbox(
+                            '启用',
+                            key='jbeijing',
+                            default=config['jbeijing'],
+                        ),
                     ],
                     [
                         sg.Text('路径：', size=(8, 1)),
@@ -219,7 +275,11 @@ def UI(config, **kw):
                 [
                     [
                         sg.Text('百度翻译：', size=(8, 1)),
-                        sg.Checkbox('启用', key='baidu', default=config['baidu'],),
+                        sg.Checkbox(
+                            '启用',
+                            key='baidu',
+                            default=config['baidu'],
+                        ),
                     ],
                     [
                         sg.Text('APPID：', size=(8, 1)),
@@ -258,7 +318,9 @@ def UI(config, **kw):
                             tab_location='lefttop',
                         )
                     ],
-                    [sg.Button('保存', key='save'),],
+                    [
+                        sg.Button('保存', key='save'),
+                    ],
                 ],
                 element_justification='center',
             )
@@ -297,10 +359,14 @@ def UI(config, **kw):
                     [
                         sg.Text('连续阅读内容：', size=(12, 1)),
                         sg.Checkbox(
-                            '角色', key='TTS_character', default=config['TTS_character'],
+                            '角色',
+                            key='TTS_character',
+                            default=config['TTS_character'],
                         ),
                         sg.Checkbox(
-                            '旁白', key='TTS_narration', default=config['TTS_narration'],
+                            '旁白',
+                            key='TTS_narration',
+                            default=config['TTS_narration'],
                         ),
                     ],
                 ],
@@ -364,7 +430,9 @@ def UI(config, **kw):
                     [
                         sg.Text('VOICEROID2：', size=(12, 1)),
                         sg.Checkbox(
-                            '启用', key='voiceroid2', default=config['voiceroid2'],
+                            '启用',
+                            key='voiceroid2',
+                            default=config['voiceroid2'],
                         ),
                     ],
                     [
@@ -409,7 +477,9 @@ def UI(config, **kw):
                                                     tick_interval=1,
                                                 ),
                                             ],
-                                            [sg.Text('マスター音量', font=(font_name, 8)),],
+                                            [
+                                                sg.Text('マスター音量', font=(font_name, 8)),
+                                            ],
                                         ],
                                         element_justification='right',
                                         pad=(15, 0),
@@ -430,7 +500,9 @@ def UI(config, **kw):
                                                     tick_interval=0.5,
                                                 ),
                                             ],
-                                            [sg.Text('音量', font=(font_name, 8)),],
+                                            [
+                                                sg.Text('音量', font=(font_name, 8)),
+                                            ],
                                         ],
                                         element_justification='right',
                                         pad=(15, 0),
@@ -451,7 +523,9 @@ def UI(config, **kw):
                                                     tick_interval=1.0,
                                                 ),
                                             ],
-                                            [sg.Text('話速', font=(font_name, 8)),],
+                                            [
+                                                sg.Text('話速', font=(font_name, 8)),
+                                            ],
                                         ],
                                         element_justification='right',
                                         pad=(15, 0),
@@ -472,7 +546,9 @@ def UI(config, **kw):
                                                     tick_interval=0.5,
                                                 ),
                                             ],
-                                            [sg.Text('高さ', font=(font_name, 8)),],
+                                            [
+                                                sg.Text('高さ', font=(font_name, 8)),
+                                            ],
                                         ],
                                         element_justification='right',
                                         pad=(15, 0),
@@ -493,7 +569,9 @@ def UI(config, **kw):
                                                     tick_interval=0.5,
                                                 ),
                                             ],
-                                            [sg.Text('抑揚', font=(font_name, 8)),],
+                                            [
+                                                sg.Text('抑揚', font=(font_name, 8)),
+                                            ],
                                         ],
                                         element_justification='right',
                                         pad=(15, 0),
@@ -514,7 +592,9 @@ def UI(config, **kw):
                                                     tick_interval=100,
                                                 ),
                                             ],
-                                            [sg.Text('短ポーズ時間', font=(font_name, 8)),],
+                                            [
+                                                sg.Text('短ポーズ時間', font=(font_name, 8)),
+                                            ],
                                         ],
                                         element_justification='right',
                                         pad=(15, 0),
@@ -535,7 +615,9 @@ def UI(config, **kw):
                                                     tick_interval=500,
                                                 ),
                                             ],
-                                            [sg.Text('長ポーズ時間', font=(font_name, 8)),],
+                                            [
+                                                sg.Text('長ポーズ時間', font=(font_name, 8)),
+                                            ],
                                         ],
                                         element_justification='right',
                                         pad=(15, 0),
@@ -556,13 +638,17 @@ def UI(config, **kw):
                                                     tick_interval=2000,
                                                 ),
                                             ],
-                                            [sg.Text('文末ポーズ時間', font=(font_name, 8)),],
+                                            [
+                                                sg.Text('文末ポーズ時間', font=(font_name, 8)),
+                                            ],
                                         ],
                                         element_justification='right',
                                         pad=(15, 0),
                                     ),
                                 ],
-                                [sg.Button('修改具体数值', key='voiceroid2_modify'),],
+                                [
+                                    sg.Button('修改具体数值', key='voiceroid2_modify'),
+                                ],
                             ],
                             element_justification='center',
                         ),
@@ -622,7 +708,9 @@ def UI(config, **kw):
                                                     tick_interval=0.5,
                                                 ),
                                             ],
-                                            [sg.Text('話速', font=(font_name, 8)),],
+                                            [
+                                                sg.Text('話速', font=(font_name, 8)),
+                                            ],
                                         ],
                                         element_justification='right',
                                         pad=(15, 0),
@@ -643,7 +731,9 @@ def UI(config, **kw):
                                                     tick_interval=0.1,
                                                 ),
                                             ],
-                                            [sg.Text('音高', font=(font_name, 8)),],
+                                            [
+                                                sg.Text('音高', font=(font_name, 8)),
+                                            ],
                                         ],
                                         element_justification='right',
                                         pad=(15, 0),
@@ -664,7 +754,9 @@ def UI(config, **kw):
                                                     tick_interval=0.5,
                                                 ),
                                             ],
-                                            [sg.Text('抑揚', font=(font_name, 8)),],
+                                            [
+                                                sg.Text('抑揚', font=(font_name, 8)),
+                                            ],
                                         ],
                                         element_justification='right',
                                         pad=(15, 0),
@@ -685,7 +777,9 @@ def UI(config, **kw):
                                                     tick_interval=0.5,
                                                 ),
                                             ],
-                                            [sg.Text('音量', font=(font_name, 8)),],
+                                            [
+                                                sg.Text('音量', font=(font_name, 8)),
+                                            ],
                                         ],
                                         element_justification='right',
                                         pad=(15, 0),
@@ -706,7 +800,9 @@ def UI(config, **kw):
                                                     tick_interval=0.5,
                                                 ),
                                             ],
-                                            [sg.Text('開始無音', font=(font_name, 8)),],
+                                            [
+                                                sg.Text('開始無音', font=(font_name, 8)),
+                                            ],
                                         ],
                                         element_justification='right',
                                         pad=(15, 0),
@@ -727,13 +823,17 @@ def UI(config, **kw):
                                                     tick_interval=0.5,
                                                 ),
                                             ],
-                                            [sg.Text('終了無音', font=(font_name, 8)),],
+                                            [
+                                                sg.Text('終了無音', font=(font_name, 8)),
+                                            ],
                                         ],
                                         element_justification='right',
                                         pad=(15, 0),
                                     ),
                                 ],
-                                [sg.Button('修改具体数值', key='voicevox_modify'),],
+                                [
+                                    sg.Button('修改具体数值', key='voicevox_modify'),
+                                ],
                             ],
                             element_justification='center',
                         ),
@@ -761,7 +861,9 @@ def UI(config, **kw):
                             tab_location='lefttop',
                         )
                     ],
-                    [sg.Button('保存', key='save'),],
+                    [
+                        sg.Button('保存', key='save'),
+                    ],
                 ],
                 element_justification='center',
             ),
@@ -794,7 +896,11 @@ def UI(config, **kw):
                 [
                     [
                         sg.Text('窗口置顶：'),
-                        sg.Checkbox('启用', key='top', default=config['top'],),
+                        sg.Checkbox(
+                            '启用',
+                            key='top',
+                            default=config['top'],
+                        ),
                     ],
                 ],
             )
@@ -805,7 +911,11 @@ def UI(config, **kw):
                 [
                     [
                         sg.Text('复制到剪切板：'),
-                        sg.Checkbox('启用', key='copy', default=config['copy'],),
+                        sg.Checkbox(
+                            '启用',
+                            key='copy',
+                            default=config['copy'],
+                        ),
                     ],
                 ],
             )
@@ -882,7 +992,8 @@ def UI(config, **kw):
                     [
                         sg.Text('识别语言：', size=(8, 1)),
                         sg.Combo(
-                            lang_translate,
+                            # lang_translate,
+                            list(tesseract_OCR.languages.keys()),
                             key='OCR_language',
                             default_value=config['OCR_language'],
                             readonly=True,
@@ -982,7 +1093,11 @@ def UI(config, **kw):
                     ],
                     [
                         sg.Text('正则表达式：'),
-                        sg.Input(key='re', default_text=config['re'], size=(50, 1),),
+                        sg.Input(
+                            key='re',
+                            default_text=config['re'],
+                            size=(50, 1),
+                        ),
                     ],
                 ],
             )
@@ -1026,7 +1141,9 @@ def UI(config, **kw):
                             tab_location='lefttop',
                         )
                     ],
-                    [sg.Button('保存', key='save'),],
+                    [
+                        sg.Button('保存', key='save'),
+                    ],
                 ],
                 element_justification='center',
             )
@@ -1058,7 +1175,13 @@ def textractor_hook_code_layout():
         [
             sg.Column(
                 [
-                    [sg.Text('特殊码:'), sg.Input(key='hook_code', size=(20, 1),),],
+                    [
+                        sg.Text('特殊码:'),
+                        sg.Input(
+                            key='hook_code',
+                            size=(20, 1),
+                        ),
+                    ],
                     [sg.Button('使用')],
                 ],
                 element_justification='center',
@@ -1135,7 +1258,9 @@ def voiceload2_layout(config):
                 size=(10, 1),
             ),
         ],
-        [sg.Button('保存'),],
+        [
+            sg.Button('保存'),
+        ],
     ]
 
     return layout
@@ -1191,7 +1316,9 @@ def voicevox_layout(config):
                 size=(10, 1),
             ),
         ],
-        [sg.Button('保存'),],
+        [
+            sg.Button('保存'),
+        ],
     ]
 
     return layout
