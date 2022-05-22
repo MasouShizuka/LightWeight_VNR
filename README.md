@@ -35,7 +35,7 @@
 
 ### Textractor
 
-1. 设置`Textractor目录`，确保目录下有`TextractorCLI.exe`和`texthook.dll`
+1. 设置`Textractor路径`，确保路径下有`TextractorCLI.exe`和`texthook.dll`
 2. 点击`启动TR`，选择`游戏进程`，再点击`Attach`注入`dll`
     - 若从`游戏列表`中启动游戏，则无需进行步骤2
     - `dll`注入后，游戏进程不关，则再次打开程序无需上述步骤
@@ -101,7 +101,7 @@
 
 #### Yukari（VOICEROID+ 结月缘）
 
-1. 设置好`Yukari路径`后，点击`启动`即可（可`最小化`）
+1. 设置`Yukari路径`，点击`启动`（可`最小化`）
 
 #### Tamiyasu（VOICEROID+ 民安ともえ）
 
@@ -110,7 +110,7 @@
 #### VOICEROID2
 
 1. 从 [https://www.python.org/downloads/windows/](https://www.python.org/downloads/windows/)下载32位的便携`Python`，并解压到程序目录的`python-win32`文件夹中
-2. 设置好`VOICEROID2路径`并`启用`（不需要打开）
+2. 设置`VOICEROID2路径`并`启用`（不需要打开）
 - 可选择`VOICEROID2`已拥有的的角色阅读
     - 角色名字为`VOICEROID2`路径下的`Voice`文件夹内的各个子文件夹名称
 - 可调整各项参数，同`VOICEROID2`软件界面
@@ -146,8 +146,9 @@
 
 ## 打包
 
+- 开发环境：`Python 3.9.12 64bit`
 - 本项目可用`Pyinstaller`打包，命令：`pyinstaller -Fw main.spec`
-    - `spec`文件中的需要追加：
+    - `spec`文件中需要追加：
         - `binaries=[('pythoncom39.dll路径', '.')],`
         - `hiddenimports=['pynput.keyboard._win32', 'pynput.mouse._win32'],`
 

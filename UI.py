@@ -634,7 +634,11 @@ def main_window():
 
 
 def floating_window():
-    with dpg.window(tag='floating_window', show=False):
+    with dpg.window(
+        tag='floating_window',
+        show=False,
+        no_title_bar=True,
+    ):
 
         # 恢复主窗口
         def exit():

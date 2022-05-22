@@ -55,7 +55,6 @@ class LightWeight_VNR:
                 dpg.set_item_callback(attr, getattr(self, attr))
 
         # 小窗口
-        self.floating_working = False
         floating_window()
         dpg.set_item_callback('floating_pause', self.pause_or_resume)
         dpg.set_item_callback('floating_read', self.read_curr_text)
@@ -300,7 +299,10 @@ class LightWeight_VNR:
         text = text.replace('\n', '')
 
         # 更新浮动窗口的原文
-        if self.floating_working and self.config['show_floating_text_original']:
+        if (
+            dpg.is_item_shown('floating_window')
+            and self.config['show_floating_text_original']
+        ):
             dpg.set_value('floating_text_original', text)
         elif self.textractor.working:
             dpg.set_value('textractor_text', f'原文：\n{self.text}\n\n')
@@ -316,7 +318,7 @@ class LightWeight_VNR:
             translator = self.translators[translator_label]
             if translator.working:
                 textarea = None
-                if self.floating_working and translator.get_translate:
+                if dpg.is_item_shown('floating_window') and translator.get_translate:
                     textarea = lambda x, translator_key=translator.key: dpg.set_value(
                         f'floating_text_{translator_key}',
                         x,
@@ -644,10 +646,10 @@ class LightWeight_VNR:
         )
 
         # 显示 screenshot_window
+        dpg.set_viewport_decorated(False)
         dpg.configure_item('main_window', show=False)
         dpg.configure_item('screenshot_window', show=True)
         dpg.set_primary_window('screenshot_window', True),
-        dpg.set_viewport_decorated(False)
         dpg.maximize_viewport()
 
         # 绘制矩形
@@ -702,10 +704,10 @@ class LightWeight_VNR:
             os.remove('Screenshot.png')
 
         # 恢复主窗口
+        dpg.set_viewport_decorated(True),
         dpg.configure_item('main_window', show=True),
         dpg.configure_item('screenshot_window', show=False),
         dpg.set_primary_window('main_window', True),
-        dpg.set_viewport_decorated(True),
         dpg.configure_viewport('LightWeight_VNR', width=1280),
         dpg.configure_viewport('LightWeight_VNR', height=720),
         dpg.configure_viewport('LightWeight_VNR', x_pos=100),
@@ -845,10 +847,9 @@ class LightWeight_VNR:
     # 小窗口按扭函数
     def floating(self):
         # 显示小窗口
+        dpg.set_viewport_decorated(False)
         dpg.configure_item('main_window', show=False)
         dpg.configure_item('floating_window', show=True)
-        dpg.set_primary_window('floating_window', True),
-        dpg.set_viewport_decorated(False)
 
         # 添加原文以及各种翻译
         if dpg.does_item_exist('floating_text'):
@@ -858,27 +859,27 @@ class LightWeight_VNR:
             parent='floating_window',
             horizontal=True,
         ):
-            text_height = 32
-            total_height = dpg.get_item_height('floating_menu_bar') + text_height
-            with dpg.group(horizontal=True):
-                with dpg.group():
+            with dpg.group():
+                with dpg.group(horizontal=True):
                     if self.config['show_floating_text_original']:
                         dpg.add_text('原文：')
-                        for translator_label in self.translators:
-                            translator = self.translators[translator_label]
-                            if translator.working and translator.get_translate:
-                                dpg.add_text(f'{translator.name}：')
-                with dpg.group():
-                    if self.config['show_floating_text_original']:
                         dpg.add_text(tag='floating_text_original')
-                    total_height += text_height
+                with dpg.group(horizontal=True):
                     for translator_label in self.translators:
                         translator = self.translators[translator_label]
                         if translator.working and translator.get_translate:
+                            dpg.add_text(f'{translator.name}：')
                             dpg.add_text(tag=f'floating_text_{translator.key}')
-                            total_height += text_height
 
-        dpg.configure_viewport('LightWeight_VNR', height=total_height)
+        # 设定小窗口自动调节高度
+        dpg.configure_item('floating_window', autosize=True)
+        sleep(0.1)
+        dpg.configure_item('floating_window', autosize=False)
+        dpg.configure_viewport(
+            'LightWeight_VNR',
+            height=dpg.get_item_height('floating_window'),
+        )
+
         # 设定小窗口宽度与游戏窗口宽度相同，并位于游戏窗口左下角
         if self.game_window:
             rectangle = self.game_window.rectangle()
@@ -886,7 +887,7 @@ class LightWeight_VNR:
             dpg.configure_viewport('LightWeight_VNR', x_pos=rectangle.left)
             dpg.configure_viewport('LightWeight_VNR', y_pos=rectangle.bottom)
 
-        self.floating_working = True
+        dpg.set_primary_window('floating_window', True),
 
 
 if __name__ == '__main__':
