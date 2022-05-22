@@ -1,10 +1,10 @@
 import os
-from time import sleep
 from threading import Thread
+from time import sleep
 
+import pytesseract
 from PIL import Image
 from pyautogui import screenshot
-import pytesseract
 
 from OCR.threshold_ways import threshold_ways
 
@@ -29,7 +29,7 @@ class Tesseract_OCR:
 
     def update_config(self, config):
         self.path = config['tesseract_OCR_path']
-        self.language = self.languages[config['OCR_language']]
+        self.language = self.languages[config['tesseract_OCR_language']]
         self.interval = float(config['OCR_interval'])
         self.threshold_way = config['threshold_way']
         self.threshold = config['threshold']
@@ -51,33 +51,35 @@ class Tesseract_OCR:
             )
         except:
             pass
+
         return text_extract
 
     # 图片处理
-    def image_process(self, im):
+    def image_process(self, image):
         # 转成灰度图
-        im = im.convert('L')
+        image = image.convert('L')
         # 按指定方式处理图片
-        im = threshold_ways[self.threshold_way](im, self.threshold)
-        im.save('Area.png')
+        image = threshold_ways[self.threshold_way](image, self.threshold)
+        image.save('Area.png')
+
+        return image
 
     # 截取矩形区域图片，进行图片处理，并进行文字识别
-    def thread(self, main_window=None, text_process=None, bbox=None):
+    def thread(self, update_image=None, text_process=None, bbox=None):
         try:
             # 取得指定区域的位置
             if bbox:
                 self.bbox = bbox
                 self.working = True
 
-            im = screenshot(region=self.bbox)
-            self.image_process(im)
+            image = screenshot(region=self.bbox)
+            image = self.image_process(image)
 
             # 界面显示图片
-            main_window['OCR_image'].update('Area.png')
+            update_image('Area.png')
 
             # 取得识别文本
-            im = Image.open('Area.png')
-            text_OCR = self.OCR(im)
+            text_OCR = self.OCR(image)
             text_process(text_OCR)
 
             if bbox:
@@ -86,17 +88,17 @@ class Tesseract_OCR:
             pass
 
     # 连续截取识别
-    def thread_continuous(self, main_window, text_process):
+    def thread_continuous(self, update_image, text_process):
         while self.working:
             if not self.pause:
-                self.thread(main_window=main_window, text_process=text_process)
+                self.thread(update_image=update_image, text_process=text_process)
             sleep(self.interval)
 
     # 连续
-    def start(self, main_window=None, text_process=None):
+    def start(self, update_image=None, text_process=None):
         self.working = True
         thread = Thread(
-            target=self.thread_continuous, args=(main_window, text_process), daemon=True
+            target=self.thread_continuous, args=(update_image, text_process), daemon=True
         )
         thread.start()
 

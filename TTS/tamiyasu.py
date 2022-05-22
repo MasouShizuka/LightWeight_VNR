@@ -1,16 +1,14 @@
 import os
 
-from pywinauto.application import Application
-from pywinauto import win32defines
 from pyperclip import copy
+from pywinauto import win32defines
+from pywinauto.application import Application
 
 from TTS.TTS import TTS
 
 
 # VOICEROID+ 民安ともえ
 # 调用Tamiyasu的方法借鉴了VNR中的源码
-
-
 class Tamiyasu(TTS):
     label = 'tamiyasu'
     name = '弦卷マキ'
@@ -19,9 +17,7 @@ class Tamiyasu(TTS):
     CMD_DELETE = 46
     CMD_PASTE = 56
 
-    def __init__(self, config):
-        self.working = False
-
+    def __init__(self, config, **kw):
         self.app = None
         self.win = None
         self.edit = None
@@ -37,25 +33,29 @@ class Tamiyasu(TTS):
     def start(self):
         self.stop()
 
-        if os.path.exists(self.path):
+        if os.path.exists(self.path_exe):
             try:
                 self.app = Application().start(
-                    self.path_exe, work_dir=self.path, timeout=10
+                    self.path_exe,
+                    work_dir=self.path,
+                    timeout=10,
                 )
                 self.working = True
             except:
                 pass
 
     def stop(self):
-        self.win = None
-        self.edit = None
-        self.play_button = None
-        self.stop_button = None
         try:
             self.app.kill()
         except:
             pass
         self.working = False
+
+        self.app = None
+        self.win = None
+        self.edit = None
+        self.play_button = None
+        self.stop_button = None
 
     def set_text(self, widget, text):
         widget.send_message(win32defines.WM_COMMAND, self.CMD_DELETE, 0)

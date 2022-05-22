@@ -2,7 +2,7 @@ import os
 
 default_config = {
     # 界面相关
-    'alpha': 1.0,
+    'font_size': 24,
     'top': False,
     'copy': False,
     # 游戏相关
@@ -12,14 +12,11 @@ default_config = {
     'textractor_interval': 0,
     # OCR相关
     'tesseract_OCR_path': os.path.join(os.path.abspath('.'), 'Tesseract-OCR'),
-    'OCR_language': '日文',
+    'tesseract_OCR_language': '日文',
     'OCR_interval': 1,
     'threshold_way': 'BINARY',
     'threshold': 127,
     # 翻译相关
-    'jbeijing': False,
-    'jbeijing_path': os.path.join(os.path.abspath('.'), 'Jbeijing'),
-    'jbeijing_to': '简体中文',
     'youdao_path': os.path.join(os.path.abspath('.'), '有道词典'),
     'youdao_get_translate': True,
     'youdao_interval': 1.0,
@@ -61,6 +58,6 @@ default_config = {
     'deduplication_abcabc_auto': True,
     'garbage_chars': '',
     're': '',
-    # 浮动窗口相关
-    'floating_text_original': False,
+    # 小窗口相关
+    'show_floating_text_original': False,
 }

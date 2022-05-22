@@ -1,4 +1,3 @@
-.idea
 .vscode
 __pycache__
 
@@ -12,8 +11,10 @@ game.json
 
 Textractor
 Tesseract-OCR
-JBeijing
 有道词典
 Yukari
 Tamiyasu
 VOICEROID2
+VOICEVOX
+
+python-win32

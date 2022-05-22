@@ -1,7 +1,7 @@
-import os
 import json
+import os
 import winsound
-from subprocess import Popen, PIPE
+from subprocess import PIPE, Popen
 from threading import Thread
 
 import requests
@@ -10,15 +10,11 @@ from TTS.TTS import TTS
 
 
 # VOICEVOX
-
-
 class VOICEVOX(TTS):
     label = 'voicevox'
     name = 'VOICEVOX'
 
-    def __init__(self, config):
-        self.working = False
-
+    def __init__(self, config, **kw):
         self.url = 'http://127.0.0.1:50021'
         self.session = None
         self.speakers = None
@@ -47,12 +43,16 @@ class VOICEVOX(TTS):
         if self.speakers:
             self.speaker_selected_id = self.speakers[self.speaker_selected]
 
-    def start(self, main_window=None):
+    def start(self, show_loading=None, set_speaker=None):
         self.stop()
 
         if os.path.exists(self.path):
             try:
-                thread = Thread(target=self.thread, args=(main_window,), daemon=True)
+                thread = Thread(
+                    target=self.thread,
+                    args=(show_loading, set_speaker),
+                    daemon=True,
+                )
                 thread.start()
                 self.working = True
             except:
@@ -68,8 +68,9 @@ class VOICEVOX(TTS):
         if os.path.exists('audio.wav'):
             os.remove('audio.wav')
 
-    def thread(self, main_window=None):
+    def thread(self, show_loading, set_speaker):
         try:
+            show_loading(True)
             self.app = Popen(
                 self.path_exe,
                 stdin=PIPE,
@@ -80,21 +81,19 @@ class VOICEVOX(TTS):
             )
             for line in iter(self.app.stderr.readline, ''):
                 if 'Application startup complete' in line:
-                    self.startup_complete(main_window=main_window)
+                    self.startup_complete(set_speaker=set_speaker)
+                    show_loading(False)
                     break
         except:
             pass
 
-    def startup_complete(self, main_window=None):
+    def startup_complete(self, set_speaker=None):
         self.session = requests.Session()
         self.get_speakers()
         self.speaker_selected_id = self.speakers[self.speaker_selected]
         try:
-            if main_window:
-                main_window['voicevox_speaker_selected'].update(
-                    values=list(self.speakers.keys())
-                )
-                main_window['voicevox_speaker_selected'].update(self.speaker_selected)
+            if set_speaker:
+                set_speaker(list(self.speakers.keys()), self.speaker_selected)
         except:
             pass
 
@@ -141,7 +140,8 @@ class VOICEVOX(TTS):
                         fp.write(r.content)
 
                     winsound.PlaySound(
-                        'audio.wav', winsound.SND_FILENAME | winsound.SND_ASYNC
+                        'audio.wav',
+                        winsound.SND_FILENAME | winsound.SND_ASYNC,
                     )
         except:
             pass

@@ -1,8 +1,8 @@
-import http.client
 import hashlib
-import urllib
-import random
+import http.client
 import json
+import random
+import urllib
 
 from Translator.translator import Translator
 

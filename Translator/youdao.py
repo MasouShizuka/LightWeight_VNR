@@ -13,8 +13,6 @@ class Youdao(Translator):
     key = 'text_youdao_translate'
 
     def __init__(self, config):
-        self.working = False
-
         self.app = None
         self.win = None
         self.edit_original = None

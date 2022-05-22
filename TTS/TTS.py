@@ -2,7 +2,7 @@ class TTS:
     label = None
     name = None
 
-    working = None
+    working = False
 
     def update_config(self, config, **kw):
         pass

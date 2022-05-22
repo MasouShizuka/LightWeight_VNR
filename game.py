@@ -1,13 +1,14 @@
-import os
 import json
-from time import sleep
+import os
 from subprocess import Popen
+from time import sleep
 
 import psutil
 
 game_info = {
     'curr_game_id': 0,
     'curr_game_name': '',
+    'curr_game_hook': '',
     'game_list': [],
 }
 
@@ -18,9 +19,9 @@ start_mode = [
 
 
 # 存储游戏信息
-def save_game(game):
+def save_game(game_info):
     with open('game.json', 'w', encoding='utf-8') as f:
-        json.dump(game, f, indent=4, ensure_ascii=False)
+        json.dump(game_info, f, indent=4, ensure_ascii=False)
 
 
 # 读取游戏信息
@@ -58,7 +59,7 @@ def start_with_locale_emulator(locale_emulator_path, game_path, game_name):
     leproc_path = os.path.join(locale_emulator_path, 'LEProc.exe')
     if os.path.exists(leproc_path) and os.path.exists(game_path):
         try:
-            Popen(r'"' + leproc_path + r'"' + r' "' + game_path + r'"', shell=True)
+            Popen([leproc_path, game_path], shell=True)
             i = 0
             while i < 10:
                 for proc in psutil.process_iter():
